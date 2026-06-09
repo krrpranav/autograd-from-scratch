@@ -137,3 +137,6 @@ if __name__ == "__main__":
     print(f"f = {f.data:.4f}")  # 10.0000
     print(f"df/da = {a.grad:.4f}")  # 3.0000
     print(f"df/db = {b.grad:.4f}")  # 7.0000
+    assert math.isclose(f.data, 10.0), f"f should be 10.0, got {f.data}"
+    assert math.isclose(a.grad, 3.0), f"df/da should be 3.0, got {a.grad}"
+    assert math.isclose(b.grad, 7.0), f"df/db should be 7.0, got {b.grad}"

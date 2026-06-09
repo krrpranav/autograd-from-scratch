@@ -1,7 +1,7 @@
 """Neural-net building blocks on top of the engine: layers and optimizers.
 
 Everything here is a composition of Tensor ops, so gradients flow through
-automatically. Nothing imports torch.
+automatically. PyTorch is used only in the tests, as a reference.
 """
 
 import numpy as np
@@ -71,9 +71,21 @@ class LayerNorm(Module):
         return xc * inv * self.g + self.b
 
 
-class Adam:
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8):
+class Optimizer:
+    """Base class: holds the parameter list and zeroes its gradients.
+    Subclasses implement step()."""
+
+    def __init__(self, params):
         self.params = params
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = np.zeros_like(p.data)
+
+
+class Adam(Optimizer):
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8):
+        super().__init__(params)
         self.lr, (self.b1, self.b2), self.eps = lr, betas, eps
         self.m = [np.zeros_like(p.data) for p in params]
         self.v = [np.zeros_like(p.data) for p in params]
@@ -91,19 +103,12 @@ class Adam:
             vhat = self.v[i] / bc2
             p.data -= self.lr * mhat / (np.sqrt(vhat) + self.eps)
 
-    def zero_grad(self):
-        for p in self.params:
-            p.grad = np.zeros_like(p.data)
 
-
-class SGD:
+class SGD(Optimizer):
     def __init__(self, params, lr=0.1):
-        self.params, self.lr = params, lr
+        super().__init__(params)
+        self.lr = lr
 
     def step(self):
         for p in self.params:
             p.data -= self.lr * p.grad
-
-    def zero_grad(self):
-        for p in self.params:
-            p.grad = np.zeros_like(p.data)

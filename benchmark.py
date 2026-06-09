@@ -2,12 +2,15 @@
 
 Forward mode builds the Jacobian one column per input, so it costs about n forward
 passes. Reverse mode builds it one row per output, so it costs about m backward
-passes. The prediction: forward wins when there are few inputs, reverse wins when
-there are few outputs, and they cross where n = m. This times both as we sweep one
-dimension with the other fixed, and the curves cross right where the theory says.
+passes. The shape prediction is O(n) vs O(m): forward wins with few inputs,
+reverse wins with few outputs, and the curves cross near n = m only up to a
+constant factor. On this engine each row of the reverse Jacobian costs roughly
+two forward passes, because every vjp call re-runs the graph-building forward
+pass before its backward sweep (see vjp in dual.py), so the measured crossover
+sits about a factor of two away from n = m.
 
 Timings are wall-clock and machine-dependent; the shape (one rising, one flat, and
-the crossover) is the point, not the absolute milliseconds.
+a crossover) is the point, not the absolute milliseconds.
 
     uv run --group viz python benchmark.py
 """
@@ -86,7 +89,7 @@ def _plot(in_fwd, in_rev, out_fwd, out_rev):
             ax.spines[s].set_visible(False)
     ax1.set_ylabel("time per full Jacobian (ms)")
     ax1.legend(frameon=False)
-    fig.suptitle("Forward vs reverse: full-Jacobian cost, and where they cross (n = m)")
+    fig.suptitle("Forward vs reverse: full-Jacobian cost")
     fig.tight_layout()
     fig.savefig("assets/mode_crossover.svg")
 

@@ -1,13 +1,11 @@
-"""Curvature of a real trained network, using the engine's own Hessian-vector products.
+"""Curvature of the trained spiral MLP, via the engine's Hessian-vector products.
 
-The second-order tools in hvp.py are usually shown on toy scalar functions. Here they
-run on an actual model. We write the MLP's loss as a function of its flat parameter
-vector (the data are constants, the weights are the variable), which the generic Dual
-makes possible: a constant array on the left of a parameter dispatches through the
-reflected ops. Then top_eigenvalue measures the sharpness of the trained optimum (the
-largest Hessian eigenvalue) and we walk the loss along that sharpest direction.
-
-No torch, and the n-by-n Hessian (here n = 1218) is never formed.
+We write the MLP's loss as a function of its flat parameter vector (the data are
+constants, the weights are the variable), which the generic Dual makes possible:
+a constant array on the left of a parameter dispatches through the reflected ops.
+top_eigenvalue then measures the sharpness of the trained optimum (the largest
+eigenvalue of the 1218 x 1218 Hessian, touched only through H v products), and we
+walk the loss along that sharpest direction.
 
     uv run --group viz python landscape.py
 """
@@ -17,9 +15,8 @@ import numpy as np
 from dual import Dual
 from engine import Tensor
 from hvp import top_eigenvalue
-from nn import Adam
 from secondorder import Dual2
-from train_mlp import MLP, make_spiral
+from train_mlp import train
 
 
 def _values(z):
@@ -29,7 +26,7 @@ def _values(z):
     if isinstance(z, Dual):
         return _values(z.primal)
     if isinstance(z, Dual2):
-        return z.p
+        return z.primal
     return np.asarray(z)
 
 
@@ -71,25 +68,8 @@ def flat_params(model):
     return theta, [p.data.shape for p in params]
 
 
-def _train_mlp(steps=400):
-    np.random.seed(0)
-    X, y = make_spiral(n_per_class=100, classes=2)
-    model = MLP(2, 32, 2)
-    opt = Adam(model.parameters(), lr=0.05)
-    from engine import cross_entropy
-
-    xt = Tensor(X)
-    for _ in range(steps):
-        loss = cross_entropy(model(xt), y)
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
-    acc = (model(xt).data.argmax(axis=1) == y).mean()
-    return model, X, y, acc
-
-
 def main():
-    model, X, y, acc = _train_mlp()
+    model, X, y, acc = train()
     theta, shapes = flat_params(model)
     f = make_loss(X, y, shapes)
 

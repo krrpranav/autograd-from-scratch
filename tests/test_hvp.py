@@ -1,7 +1,8 @@
 """Hessian-vector products checked against PyTorch and the explicit Hessian.
 
-torch reaches H v by reverse-over-reverse (double backward); this engine reaches it
-by forward-over-reverse. Different routes, same answer, which is the real check.
+torch computes H v by reverse-over-reverse (double backward); this engine
+computes it by forward-over-reverse, so the two implementations share no code
+path.
 
     python -m pytest tests/test_hvp.py -v
 """

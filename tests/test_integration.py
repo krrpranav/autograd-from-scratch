@@ -1,8 +1,8 @@
-"""End-to-end regression: the demo models actually learn on the engine.
+"""End-to-end regression: the demo models learn on the engine.
 
-Green unit tests don't prove a model trains. These run the real training loops
-(seeded, short) and assert loss drops / accuracy rises, which is what would break
-if a gradient were subtly wrong but still shape-correct.
+These run the real training loops (seeded, short) and assert loss drops and
+accuracy rises, which is what would break if a gradient were subtly wrong but
+still shape-correct.
 
     python -m pytest tests/test_integration.py -v
 """

@@ -1,12 +1,14 @@
-"""Draw the computation graph the engine actually built.
+"""Render a Tensor expression's computation graph to SVG.
 
-Hand the output Tensor of any expression to draw_dot and it renders the graph to
-SVG: every node shows its op, its value, and its gradient, with edges pointing the
-way values flow. Call .backward() first if you want the gradients filled in. No
-graphviz, no system dependency: the layout and the SVG are built here.
+draw_dot takes the output Tensor of an expression and draws its graph: every
+node shows its op, its value, and its gradient, with edges pointing the way
+values flow. Call .backward() first if you want the gradients filled in. Layout
+and markup are generated here directly; there is no graphviz dependency.
 
     uv run python viz.py        # writes assets/example_graph.svg
 """
+
+from xml.sax.saxutils import escape
 
 import numpy as np
 
@@ -16,30 +18,38 @@ COL, ROW, NW, NH, MARGIN = 210, 96, 172, 64, 32
 
 
 def _walk(root):
+    """Post-order list of every node reachable from root, children before parents.
+
+    Iterative, with the same two-push stack pattern as Tensor.backward: each node
+    is pushed twice, and the second pop (after its children) is when it gets
+    appended. A recursive walk would hit Python's recursion limit on the deep
+    chains that backward() itself handles fine.
+    """
     nodes, seen = [], set()
-
-    def visit(v):
-        if id(v) in seen:
-            return
-        seen.add(id(v))
-        for c in v._prev:
-            visit(c)
-        nodes.append(v)
-
-    visit(root)
+    stack = [(root, False)]
+    while stack:
+        v, processed = stack.pop()
+        if processed:
+            nodes.append(v)
+        elif id(v) not in seen:
+            seen.add(id(v))
+            stack.append((v, True))
+            # children pushed in reverse so they pop in _prev order, which
+            # matches the order a recursive visit would use
+            for c in reversed(tuple(v._prev)):
+                stack.append((c, False))
     return nodes
 
 
 def _depth(nodes):
+    """Column index for each node: 0 for leaves, 1 + max over children otherwise.
+
+    nodes is the post-order list from _walk, so every child appears before its
+    parent and a single pass resolves each depth from already-computed children.
+    """
     d = {}
-
-    def of(v):
-        if id(v) not in d:
-            d[id(v)] = 1 + max((of(c) for c in v._prev), default=-1)
-        return d[id(v)]
-
     for v in nodes:
-        of(v)
+        d[id(v)] = 1 + max((d[id(c)] for c in v._prev), default=-1)
     return d
 
 
@@ -74,7 +84,7 @@ def draw_dot(root, path, title="computation graph"):
         'orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>',
         f'<rect width="{w}" height="{h}" fill="#ffffff"/>',
         f'<rect x="0.5" y="0.5" width="{w - 1}" height="{h - 1}" fill="none" stroke="#e5e7eb"/>',
-        f'<text x="{MARGIN}" y="40" font-size="18" font-weight="600" fill="#111827">{title}</text>',
+        f'<text x="{MARGIN}" y="40" font-size="18" font-weight="600" fill="#111827">{escape(title)}</text>',
     ]
     for v in nodes:
         for c in v._prev:
@@ -95,11 +105,11 @@ def draw_dot(root, path, title="computation graph"):
         val, grad = _label(v)
         out += [
             f'<rect x="{x}" y="{y}" width="{NW}" height="{NH}" rx="11" fill="{fill}" stroke="{stroke}"/>',
-            f'<text x="{x + 14}" y="{y + 23}" font-size="13.5" font-weight="600" fill="#1f2933">{head}</text>',
+            f'<text x="{x + 14}" y="{y + 23}" font-size="13.5" font-weight="600" fill="#1f2933">{escape(head)}</text>',
             f'<text x="{x + 14}" y="{y + 41}" font-size="12" fill="#2563eb" '
-            f'font-family="ui-monospace, Menlo, Consolas, monospace">{val}</text>',
+            f'font-family="ui-monospace, Menlo, Consolas, monospace">{escape(val)}</text>',
             f'<text x="{x + 14}" y="{y + 57}" font-size="12" fill="#dc2626" '
-            f'font-family="ui-monospace, Menlo, Consolas, monospace">{grad}</text>',
+            f'font-family="ui-monospace, Menlo, Consolas, monospace">{escape(grad)}</text>',
         ]
     out.append("</svg>")
     with open(path, "w") as fh:

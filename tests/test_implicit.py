@@ -8,7 +8,7 @@ non-quadratic argmin is checked against finite differences over the solver.
 
 import numpy as np
 
-from implicit import solution_jacobian
+from implicit import _ConstVec, solution_jacobian
 from secondorder import newton_minimize
 
 
@@ -31,14 +31,6 @@ def test_ridge_matches_closed_form():
     assert np.allclose(dxdl, dxdl_closed, atol=1e-9)
 
 
-class _Const:
-    def __init__(self, a):
-        self.a = np.asarray(a, np.float64)
-
-    def __getitem__(self, i):
-        return self.a[i]
-
-
 def test_nonlinear_matches_finite_difference():
     def f(x, t):
         a = x[0] - t[0]
@@ -46,7 +38,7 @@ def test_nonlinear_matches_finite_difference():
         return a.exp() + (-a).exp() + b.exp() + (-b).exp() + 0.3 * (x[0] * x[1])
 
     def solve(t):
-        x, _ = newton_minimize(lambda x: f(x, _Const(t)), [0.0, 0.0], steps=12)
+        x, _ = newton_minimize(lambda x: f(x, _ConstVec(t)), [0.0, 0.0], steps=12)
         return x
 
     t0 = np.array([1.0])

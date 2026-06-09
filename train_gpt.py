@@ -1,9 +1,9 @@
-"""A tiny GPT trained entirely on autograd-from-scratch. No torch.autograd anywhere.
+"""A tiny GPT trained with the engine in this repo.
 
 The same decoder-only Transformer as minimal-gpt (multi-head causal attention,
-pre-norm blocks, separate output head), but every gradient comes from the
-hand-built engine in engine.py. Overfitting one short passage drives the loss
-toward zero, which is the signal that the whole graph differentiates.
+pre-norm blocks, separate output head), with every gradient coming from
+engine.py. Overfitting one short passage drives the loss toward zero, which
+requires correct gradients through every op in the graph.
 
     uv run python train_gpt.py
 """

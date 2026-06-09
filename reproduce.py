@@ -1,9 +1,10 @@
 """Reproduce every figure and headline number in one command.
 
-Runs the test suite, then each demo and figure generator in turn. The engine is
-deterministic (fixed seeds), so every number is exact from run to run; only the
-benchmark's wall-clock timings vary by machine. All figures under assets/ are
-rewritten. Takes a minute or two, mostly the GPT.
+Runs the test suite, then each demo and figure generator in turn (the written
+analysis lives in markdown, so there is no separate paper build step). The
+engine is deterministic (fixed seeds), so every number is exact from run to run;
+only the benchmark's wall-clock timings vary by machine. All figures under
+assets/ are rewritten. Takes a minute or two, mostly the GPT.
 
     uv run --group viz python reproduce.py
 """
@@ -26,7 +27,6 @@ STEPS = [
         "forward vs reverse cost crossover  ->  assets/mode_crossover.svg",
     ),
     (["viz.py"], "a real computation graph  ->  assets/example_graph.svg"),
-    (["paper/figures.py"], "the paper's figures  ->  paper/figs/*.pdf"),
 ]
 
 

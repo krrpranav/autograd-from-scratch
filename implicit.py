@@ -1,16 +1,16 @@
-"""Implicit differentiation: the gradient of the answer to an optimization problem.
+"""Implicit differentiation: the derivative of the solution of an optimization problem.
 
-Say x*(t) = argmin_x f(x, t). You'd think to get dx*/dt you must unroll the whole
-optimizer and backprop through every step. You don't. At the optimum the gradient
-vanishes, grad_x f(x*, t) = 0, and that equation holds for *all* t. Differentiate it:
+Let x*(t) = argmin_x f(x, t). To get dx*/dt there is no need to unroll the
+optimizer and backprop through its steps. At the optimum the gradient vanishes,
+grad_x f(x*, t) = 0, and that equation holds for all t. Differentiating it gives
 
         H_xx . dx*/dt  +  H_xt  =  0       (H = blocks of the Hessian of f)
    =>   dx*/dt  =  -H_xx^{-1} . H_xt
 
-So one Hessian (we have it, from secondorder.py) and one linear solve give the
-gradient of the solution, no unrolling, no matter how many steps the optimizer took.
-This is the implicit function theorem, and it is what powers deep equilibrium models,
-optimization-as-a-layer (OptNet), and hyperparameter gradients.
+So one Hessian (from secondorder.py) and one linear solve give the derivative of
+the solution, regardless of how many steps the optimizer took. This is the
+implicit function theorem; the same identity is used in deep equilibrium models
+and in hyperparameter gradients (see also OptNet's optimization layers).
 
     uv run python implicit.py
 """
@@ -37,6 +37,20 @@ def solution_jacobian(f, x_star, theta):
     return -np.linalg.solve(H_xx, H_xt)
 
 
+class _ConstVec:
+    """Wrap a fixed numpy theta so f(x, theta) can run on the engine with x as a
+    Tensor/Dual2 while theta stays a plain constant (only x is differentiated)."""
+
+    def __init__(self, arr):
+        self.arr = np.asarray(arr, np.float64)
+
+    def __getitem__(self, i):
+        return self.arr[i]
+
+    def sum(self):
+        return float(self.arr.sum())
+
+
 def _ridge_demo():
     rng = np.random.default_rng(0)
     m, n = 8, 3
@@ -61,7 +75,8 @@ def _ridge_demo():
 
 
 def _nonlinear_demo():
-    # x*(t) = argmin  cosh(x0 - t0) + cosh(x1 - 2) + 0.3*(x0*x1)
+    # x*(t) = argmin_x  2*cosh(x0 - t0) + 2*cosh(x1 - 2) + 0.3*x0*x1
+    # (each exp pair below sums to 2*cosh)
     def f(x, t):
         a = x[0] - t[0]
         b = x[1] - 2.0
@@ -82,20 +97,6 @@ def _nonlinear_demo():
     print(f"  implicit-diff      : {np.array2string(dxdt_implicit, precision=5)}")
     print(f"  finite differences : {np.array2string(dxdt_fd, precision=5)}")
     print(f"  max abs error      : {np.abs(dxdt_implicit - dxdt_fd).max():.2e}")
-
-
-class _ConstVec:
-    """Wrap a fixed numpy theta so f(x, theta) can run on the engine with x as a
-    Tensor/Dual2 while theta stays a plain constant (only x is differentiated)."""
-
-    def __init__(self, arr):
-        self.arr = np.asarray(arr, np.float64)
-
-    def __getitem__(self, i):
-        return self.arr[i]
-
-    def sum(self):
-        return float(self.arr.sum())
 
 
 if __name__ == "__main__":

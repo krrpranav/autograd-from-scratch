@@ -1,7 +1,7 @@
-"""Train an MLP on a 2-class spiral, entirely on autograd-from-scratch. No torch.
+"""Train an MLP on a 2-class spiral with the engine in this repo.
 
-A spiral is not linearly separable, so reaching high accuracy proves the engine
-backprops correctly through a real nonlinear network.
+A spiral is not linearly separable, so reaching high accuracy requires gradients
+to flow correctly through the full nonlinear network.
 
     uv run python train_mlp.py
 """
@@ -38,7 +38,13 @@ class MLP(Module):
         return self.l3(x)
 
 
-def main():
+def train(steps=400, log=False):
+    """Train the spiral MLP and return (model, X, y, final_acc).
+
+    The global RNG is seeded first, then make_spiral runs (it uses its own
+    default_rng), then the MLP init draws from np.random. landscape.py calls this
+    to obtain the exact same trained weights, so that consumption order must not
+    change."""
     np.random.seed(0)
     X, y = make_spiral(n_per_class=100, classes=2)
     x = Tensor(X)
@@ -46,17 +52,22 @@ def main():
     model = MLP(2, 32, 2)
     opt = Adam(model.parameters(), lr=0.05)
 
-    for step in range(400):
+    for step in range(steps):
         logits = model(x)
         loss = cross_entropy(logits, y)
         opt.zero_grad()
         loss.backward()
         opt.step()
-        if step % 50 == 0 or step == 399:
+        if log and (step % 50 == 0 or step == steps - 1):
             acc = (logits.data.argmax(axis=1) == y).mean()
             print(f"step {step:4d} | loss {loss.data:.4f} | acc {acc:.3f}")
 
     final_acc = (model(x).data.argmax(axis=1) == y).mean()
+    return model, X, y, final_acc
+
+
+def main():
+    _, _, _, final_acc = train(log=True)
     print(f"\nfinal accuracy: {final_acc:.3f}")
 
 

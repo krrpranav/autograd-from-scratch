@@ -10,10 +10,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.0",
-    "torch>=2.2",   # used ONLY in tests, to cross-check our gradients against a reference
+    "torch>=2.2",   # tests only, as a reference to check gradients against
 ]
 viz = [
-    "matplotlib>=3.8",   # used ONLY by landscape.py to draw the loss-landscape figure
+    "matplotlib>=3.8",   # figure scripts: landscape.py and benchmark.py
 ]
 
 [tool.pytest.ini_options]
