@@ -55,9 +55,9 @@ def test_curvature_vs_finite_difference():
     ours, _ = directional_curvature(f_poly, x, v)
     eps = 1e-4
     fd = (
-        f_poly(Dual2(x + eps * v)).p
-        - 2 * f_poly(Dual2(x)).p
-        + f_poly(Dual2(x - eps * v)).p
+        f_poly(Dual2(x + eps * v)).primal
+        - 2 * f_poly(Dual2(x)).primal
+        + f_poly(Dual2(x - eps * v)).primal
     ) / eps**2
     assert abs(ours - float(fd)) < 1e-4
 
@@ -79,11 +79,11 @@ def test_newton_finds_the_minimum():
 def test_dual2_mean_tuple_axis_matches_numpy():
     a = rng.standard_normal((2, 3, 4))
     for axis in [(0, 2), (-1, -3), (1,)]:
-        assert np.allclose(Dual2(a).mean(axis=axis).p, a.mean(axis=axis))
+        assert np.allclose(Dual2(a).mean(axis=axis).primal, a.mean(axis=axis))
 
 
 def test_dual2_exposes_same_ops_as_tensor():
-    # same drift guard as test_dual.py, now that Dual2 grew the missing ops
+    # same drift guard as test_dual.py
     ops = {
         "exp",
         "log",
@@ -95,6 +95,7 @@ def test_dual2_exposes_same_ops_as_tensor():
         "reshape",
         "transpose",
         "softmax",
+        "shape",
     }
     for name in ops:
         assert hasattr(Dual2, name), f"Dual2 missing {name}"

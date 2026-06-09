@@ -1,19 +1,22 @@
 """A tensor-valued reverse-mode autograd engine, in NumPy.
 
-A `Tensor` wraps a NumPy array and remembers how it was produced, so calling
+A `Tensor` wraps a NumPy array and remembers how it was produced. Calling
 `.backward()` on a scalar walks that graph in reverse and fills every `.grad`
 via the chain rule.
 
-The one genuinely hard part is broadcasting. When an op broadcast a small array
-up to a big one in the forward pass, the backward pass has to sum the gradient
-back *down* to the original shape. `_unbroadcast` does exactly that, and getting
-it right is what makes the gradient checks pass to 1e-6.
+Broadcasting needs care: when an op broadcasts a small array up to a big one
+in the forward pass, the backward pass has to sum the gradient back down to
+the original shape. `_unbroadcast` does that.
 
-Everything is float64 on purpose: this engine optimizes for provably-correct
-gradients over speed.
+Everything is float64; the engine favors gradient accuracy over speed.
 """
 
 import numpy as np
+
+# constants of the tanh approximation of GELU (the variant GPT-2 uses),
+# shared with the forward-mode engines in dual.py and secondorder.py
+GELU_C = np.sqrt(2.0 / np.pi)
+GELU_CUBIC = 0.044715
 
 
 def _unbroadcast(grad, shape):
@@ -30,6 +33,13 @@ def _unbroadcast(grad, shape):
     return grad
 
 
+def _norm_shape(shape):
+    """Normalize reshape arguments: accept reshape(2, 3) and reshape((2, 3)) alike."""
+    if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        return tuple(shape[0])
+    return shape
+
+
 class Tensor:
     # make numpy defer to our reflected ops when an ndarray is on the left, so
     # `ndarray + tensor` calls Tensor.__radd__ instead of building an object array
@@ -38,10 +48,11 @@ class Tensor:
     def __init__(self, data, _children=(), _op=""):
         self.data = np.asarray(data, dtype=np.float64)
         self.grad = np.zeros_like(self.data)
-        self._backward = lambda: (
-            None
-        )  # leaves keep this no-op; backward over an input is a safe nop
-        self._prev = set(_children)
+        # leaves keep this no-op; backward over an input is a safe nop
+        self._backward = lambda: None
+        # a tuple keeps iteration order deterministic (for viz); backward()'s
+        # visited set already dedups repeated children like a+a
+        self._prev = tuple(_children)
         self._op = _op
 
     @property
@@ -79,6 +90,19 @@ class Tensor:
 
     def __pow__(self, p):
         assert isinstance(p, (int, float)), "only constant powers supported"
+        # at x=0 the p-1 power below is inf for p<1; for p in {0,1} its
+        # coefficient is 0 or x**0, so write those cases by their true value
+        # instead of letting 0*inf produce nan.
+        if p == 0:  # constant one; zero gradient (default no-op backward)
+            return Tensor(np.ones_like(self.data), (self,), "**0")
+        if p == 1:  # identity; gradient passes through
+            out = Tensor(self.data.copy(), (self,), "**1")
+
+            def _backward():
+                self.grad += out.grad
+
+            out._backward = _backward
+            return out
         out = Tensor(self.data**p, (self,), f"**{p}")
 
         def _backward():
@@ -104,9 +128,11 @@ class Tensor:
                 ga = g[..., :, None] * b  # outer: (...,m,1)*(n,) -> (...,m,n)
                 gb = np.swapaxes(a, -1, -2) @ g[..., :, None]  # (...,n,1)
                 gb = gb[..., :, 0]
-            elif a.ndim == 1:  # (n,)@(n,k) -> (k,)
-                ga = b @ g  # (n,k)@(k,) -> (n,)
-                gb = a[:, None] * g  # outer: (n,1)*(k,) -> (n,k)
+            elif a.ndim == 1:  # (n,)@(...,n,k) -> (...,k); g is (...,k)
+                # contract b's last axis (k) with g: (...,n,k)@(...,k,1) -> (...,n,1);
+                # _unbroadcast below sums any batch dims off to reach a's (n,)
+                ga = (b @ g[..., None])[..., 0]
+                gb = a[:, None] * g[..., None, :]  # outer: (n,1)*(...,1,k) -> (...,n,k)
             else:  # the usual 2-D / batched-2D path
                 ga = g @ np.swapaxes(b, -1, -2)
                 gb = np.swapaxes(a, -1, -2) @ g
@@ -155,14 +181,13 @@ class Tensor:
 
     def gelu(self):
         # tanh approximation of GELU (the variant GPT-2 uses).
-        c = np.sqrt(2.0 / np.pi)
         x = self.data
-        inner = c * (x + 0.044715 * x**3)
+        inner = GELU_C * (x + GELU_CUBIC * x**3)
         t = np.tanh(inner)
         out = Tensor(0.5 * x * (1 + t), (self,), "gelu")
 
         def _backward():
-            dinner = c * (1 + 3 * 0.044715 * x**2)
+            dinner = GELU_C * (1 + 3 * GELU_CUBIC * x**2)
             dt = (1 - t * t) * dinner
             grad = 0.5 * (1 + t) + 0.5 * x * dt
             self.grad += out.grad * grad
@@ -176,9 +201,9 @@ class Tensor:
         def _backward():
             g = out.grad
             if axis is not None and not keepdims:
-                g = np.expand_dims(
-                    g, axis
-                )  # re-insert reduced axes as size-1 so broadcast_to below re-expands (adjoint of sum is broadcast)
+                # re-insert reduced axes as size-1 so broadcast_to below
+                # re-expands (the adjoint of sum is broadcast)
+                g = np.expand_dims(g, axis)
             self.grad += np.broadcast_to(g, self.data.shape)
 
         out._backward = _backward
@@ -192,8 +217,7 @@ class Tensor:
         return self.sum(axis=axis, keepdims=keepdims) * (1.0 / float(n))
 
     def reshape(self, *shape):
-        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
-            shape = tuple(shape[0])
+        shape = _norm_shape(shape)
         out = Tensor(self.data.reshape(shape), (self,), "reshape")
 
         def _backward():
@@ -216,9 +240,8 @@ class Tensor:
 
         def _backward():
             g = np.zeros_like(self.data)
-            np.add.at(
-                g, idx, out.grad
-            )  # scatter-add handles repeated indices (embeddings)
+            # scatter-add handles repeated indices (embeddings)
+            np.add.at(g, idx, out.grad)
             self.grad += g
 
         out._backward = _backward
@@ -259,8 +282,8 @@ class Tensor:
     def backward(self, seed=None):
         """Reverse-mode pass. seed is the cotangent for this node's output: the
         default (ones) gives the usual gradient of a scalar; passing an arbitrary
-        seed `u` computes the vector-Jacobian product J^T u, which is what lets us
-        prove forward and reverse mode are adjoints (see dual.py)."""
+        seed `u` computes the vector-Jacobian product J^T u (dual.py uses this to
+        compare forward and reverse mode)."""
         topo, visited = [], set()
 
         # iterative post-order DFS so a deep graph (>1000 nodes) can't blow the

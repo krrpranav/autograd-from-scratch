@@ -1,26 +1,23 @@
-"""Forward-mode autodiff, the other way to differentiate.
+"""Forward-mode autodiff.
 
 engine.py is reverse mode (backprop): it builds a graph, then walks it backward
 to get the gradient of one output w.r.t. everything. This file is forward mode:
-no graph at all. Each `Dual` carries a value and a *tangent* (a directional
-derivative), and pushes that tangent forward through the same chain rule, op by
-op. One forward pass gives you a Jacobian-vector product J v.
+no graph. Each `Dual` carries a value and a tangent (a directional derivative)
+and pushes the tangent forward through the same chain rule, op by op. One
+forward pass gives a Jacobian-vector product J v.
 
-The two modes are not just both "autodiff". They are adjoints of the same
-linear map J. Forward mode computes J v; reverse mode computes J^T u. That means
-for any vectors u, v:
+The two modes are adjoints of the same linear map J. Forward mode computes J v;
+reverse mode computes J^T u. For any vectors u, v:
 
         < u , J v >  ==  < J^T u , v >
 
-If our forward and reverse implementations are both correct, this identity holds
-to machine precision. `test_dual.py` checks it to 1e-10. You cannot pass that
-test without genuinely understanding that autodiff is one chain rule applied in
-two directions. That identity, proven, is the point of this whole repo.
+When both implementations are correct this identity holds to machine precision;
+`test_dual.py` checks it to 1e-10.
 """
 
 import numpy as np
 
-from engine import Tensor
+from engine import GELU_C, GELU_CUBIC, Tensor, _as_tuple, _norm_shape
 
 
 # Elementwise calls route to the Tensor method of the same name when the primal is
@@ -39,8 +36,8 @@ def _tanh(a):
     return a.tanh() if isinstance(a, Tensor) else np.tanh(a)
 
 
-def _swap(a, a1, a2):
-    return a.transpose(a1, a2) if isinstance(a, Tensor) else np.swapaxes(a, a1, a2)
+def _swap(a, ax1, ax2):
+    return a.transpose(ax1, ax2) if isinstance(a, Tensor) else np.swapaxes(a, ax1, ax2)
 
 
 class Dual:
@@ -68,7 +65,7 @@ class Dual:
     def _wrap(self, other):
         return other if isinstance(other, Dual) else Dual(other)
 
-    # numpy broadcasts the tangents, which is all forward mode needs
+    # numpy broadcasts the tangents the same way it broadcasts the primals
     def __add__(self, other):
         o = self._wrap(other)
         return Dual(self.primal + o.primal, self.tangent + o.tangent)
@@ -81,6 +78,16 @@ class Dual:
         )
 
     def __pow__(self, p):
+        # at x=0 the p-1 power below is inf for p<1; for p in {0,1} its coefficient
+        # is 0 or 1, so write those cases by their true value instead of letting
+        # 0*inf produce nan. the primal may be a Tensor (forward-over-reverse):
+        # p==1 passes it through untouched, p==0 builds the constant from the
+        # underlying ndarray (a constant needs no graph).
+        if p == 0:
+            base = self.primal.data if isinstance(self.primal, Tensor) else self.primal
+            return Dual(np.ones_like(base), np.zeros_like(base))
+        if p == 1:
+            return Dual(self.primal, self.tangent)
         return Dual(self.primal**p, p * self.primal ** (p - 1) * self.tangent)
 
     def __matmul__(self, other):
@@ -107,10 +114,9 @@ class Dual:
         return Dual(t, (1 - t * t) * self.tangent)
 
     def gelu(self):
-        c = np.sqrt(2.0 / np.pi)
         x = self.primal
-        t = _tanh(c * (x + 0.044715 * x**3))
-        dinner = c * (1 + 3 * 0.044715 * x**2)
+        t = _tanh(GELU_C * (x + GELU_CUBIC * x**3))
+        dinner = GELU_C * (1 + 3 * GELU_CUBIC * x**2)
         dgelu = 0.5 * (1 + t) + 0.5 * x * (1 - t * t) * dinner
         return Dual(0.5 * x * (1 + t), dgelu * self.tangent)
 
@@ -125,17 +131,15 @@ class Dual:
         if axis is None:
             n = self.primal.size
         else:
-            ax = axis if isinstance(axis, tuple) else (axis,)
-            n = int(np.prod([self.primal.shape[a] for a in ax]))
+            n = int(np.prod([self.primal.shape[a] for a in _as_tuple(axis)]))
         return self.sum(axis=axis, keepdims=keepdims) * (1.0 / float(n))
 
     def reshape(self, *shape):
-        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
-            shape = tuple(shape[0])
+        shape = _norm_shape(shape)
         return Dual(self.primal.reshape(shape), self.tangent.reshape(shape))
 
-    def transpose(self, a1, a2):
-        return Dual(_swap(self.primal, a1, a2), _swap(self.tangent, a1, a2))
+    def transpose(self, ax1, ax2):
+        return Dual(_swap(self.primal, ax1, ax2), _swap(self.tangent, ax1, ax2))
 
     def __getitem__(self, idx):
         return Dual(self.primal[idx], self.tangent[idx])
@@ -178,7 +182,7 @@ class Dual:
         return f"Dual(primal_shape={self.primal.shape})"
 
 
-# The two derivatives, from one generic f (works on Dual and Tensor).
+# jvp and vjp share one generic f, which must run on both Dual and Tensor.
 def jvp(f, x, v):
     """Jacobian-vector product J v, in one forward pass."""
     out = f(Dual(np.asarray(x, np.float64), np.asarray(v, np.float64)))

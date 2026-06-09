@@ -1,10 +1,8 @@
-"""Correctness gate for the engine.
+"""Tests for the reverse-mode engine.
 
 Two independent checks per op:
   1. cross-check our analytic gradient against PyTorch's autograd (the reference)
   2. a numerical finite-difference gradient check (no framework involved)
-
-If both pass to ~1e-6, the gradient is right. There is no way to fake this.
 
     python -m pytest tests/test_engine.py -v
 """
@@ -288,3 +286,37 @@ def test_backward_deep_graph_no_recursion_error():
         y = y + x
     y.backward()
     assert np.isclose(float(x.grad), 5001.0)
+
+
+def test_matmul_1d_left_batched_right():
+    # regression: (n,)@(B,n,k) succeeded in the forward but the old backward
+    # assumed b was 2-D and crashed. keep the plain (n,)@(n,k) case alongside.
+    cases = [
+        (rng.standard_normal(5), rng.standard_normal((5, 3))),  # (n,)@(n,k)
+        (rng.standard_normal(5), rng.standard_normal((2, 5, 3))),  # (n,)@(B,n,k)
+        (rng.standard_normal(5), rng.standard_normal((2, 2, 5, 3))),  # 2 batch dims
+    ]
+    for a, b in cases:
+        _check_against_torch(
+            lambda x, y: (x @ y).sum(), lambda x, y: (x @ y).sum(), a, b
+        )
+
+
+def test_pow_one_is_identity_at_zero():
+    # x**1 must have gradient 1 everywhere, including x=0 (no 0*inf nan).
+    a = np.array([0.0, -2.0, 3.0])
+    x = Tensor(a.copy())
+    (x**1).sum().backward()
+    assert np.allclose(x.grad, np.ones_like(a))
+    assert not np.any(np.isnan(x.grad))
+
+
+def test_pow_zero_is_constant_at_zero():
+    # x**0 is the constant one with zero gradient, even where x=0.
+    a = np.array([0.0, -2.0, 3.0])
+    x = Tensor(a.copy())
+    out = x**0
+    assert np.allclose(out.data, 1.0)
+    out.sum().backward()
+    assert np.allclose(x.grad, 0.0)
+    assert not np.any(np.isnan(x.grad))

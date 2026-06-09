@@ -1,7 +1,7 @@
 """Tests for forward mode and the forward/reverse adjoint relationship.
 
-The headline is test_adjoint_identity: it proves the two autodiff modes are
-transposes of one linear map. Everything else backs it up.
+test_adjoint_identity checks <u, Jv> == <J^T u, v> on random inputs; the rest
+covers individual ops against finite differences and the reverse-mode engine.
 
     python -m pytest tests/test_dual.py -v
 """
@@ -103,6 +103,7 @@ def test_dual_and_tensor_expose_the_same_ops():
         "reshape",
         "transpose",
         "softmax",
+        "shape",
     }
     for name in ops:
         assert hasattr(Dual, name), f"Dual missing {name}"
@@ -117,3 +118,38 @@ def test_dual_mean_tuple_axis_matches_numpy():
         # the tangent gets the same linear op, so a unit tangent averages to 1/n
         ones = Dual(a, np.ones_like(a)).mean(axis=axis)
         assert np.allclose(ones.tangent, np.ones_like(d.primal))
+
+
+def test_dual_pow_one_is_identity_at_zero():
+    # x**1: tangent passes through unchanged, including at x=0 (no 0*inf nan).
+    a = np.array([0.0, -2.0, 3.0])
+    v = np.array([1.0, 2.0, 3.0])
+    d = Dual(a, v) ** 1
+    assert np.allclose(d.primal, a)
+    assert np.allclose(d.tangent, v)
+    assert not np.any(np.isnan(d.tangent))
+
+
+def test_dual_pow_zero_is_constant_at_zero():
+    # x**0 is the constant one with zero tangent, even where x=0.
+    a = np.array([0.0, -2.0, 3.0])
+    v = np.array([1.0, 2.0, 3.0])
+    d = Dual(a, v) ** 0
+    assert np.allclose(d.primal, 1.0)
+    assert np.allclose(d.tangent, 0.0)
+    assert not np.any(np.isnan(d.tangent))
+
+
+def test_dual_pow_short_circuits_with_tensor_primal():
+    # forward-over-reverse: p==1 must keep the Tensor primal (and its graph);
+    # p==0 must build the constant from the underlying ndarray.
+    a = np.array([0.0, 2.0])
+    xt = Tensor(a.copy())
+    d = Dual(xt, np.ones_like(a))
+    d1 = d**1
+    assert d1.primal is xt
+    assert np.allclose(d1.tangent, 1.0)
+    d0 = d**0
+    assert isinstance(d0.primal, np.ndarray)
+    assert np.allclose(d0.primal, 1.0)
+    assert np.allclose(d0.tangent, 0.0)
