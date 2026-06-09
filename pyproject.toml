@@ -1,0 +1,22 @@
+[project]
+name = "autograd-from-scratch"
+version = "0.1.0"
+description = "A tensor-valued reverse-mode autograd engine in NumPy, from scratch. Builds up to training a small Transformer with no torch.autograd."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=1.26",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "torch>=2.2",   # used ONLY in tests, to cross-check our gradients against a reference
+]
+viz = [
+    "matplotlib>=3.8",   # used ONLY by landscape.py to draw the loss-landscape figure
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+pythonpath = ["."]   # tests/ live in a subfolder but import the modules at the root
