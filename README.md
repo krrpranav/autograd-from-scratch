@@ -43,7 +43,7 @@ The code is one half; the other half is a set of materials for working through
 it. They are meant to be used in roughly this order, but each stands on its
 own.
 
-### 1. `walkthrough.ipynb`, if autodiff is new to you
+### 1. [`walkthrough.ipynb`](walkthrough.ipynb), if autodiff is new to you
 
 A notebook that builds a scalar autodiff engine from nothing, in the order the
 ideas actually arrive: estimate a derivative by nudging a value, write a
@@ -60,7 +60,7 @@ run and edit it locally:
 uv run --with notebook jupyter notebook walkthrough.ipynb
 ```
 
-### 2. `GUIDE.md`, the walkthrough of the real engine
+### 2. [`GUIDE.md`](GUIDE.md), the walkthrough of the real engine
 
 The guide covers the repo in the order it was built, one section per idea:
 reverse mode with a fully hand-traced backward pass, broadcasting and why it
@@ -79,7 +79,7 @@ placed where you have just learned enough to attempt them.
 Use it with the code open: run the script each section talks about, then read
 the section, then read the source file.
 
-### 3. `challenge/`, rebuild the engine yourself
+### 3. [`challenge/`](challenge/), rebuild the engine yourself
 
 The strongest way through this material is writing the engine against the same
 tests that verify mine. The challenge directory has two skeleton files
@@ -98,28 +98,31 @@ uv run python -m pytest challenge -x   # stops at exactly the next thing to impl
 Implement the method it failed on, run it again, repeat. The checks are
 framework-free (hand-computed numbers and finite differences), so you never
 need PyTorch for this part. The rules and checkpoint list are in
-`challenge/README.md`. If you want to confirm the checkpoints themselves are
+[`challenge/README.md`](challenge/README.md). If you want to confirm the checkpoints themselves are
 sound, `CHALLENGE_REFERENCE=1 uv run python -m pytest challenge -q` runs them
 against the repo's real engine; all of them pass.
 
-### 4. `solutions/`, when you are stuck or done
+### 4. [`solutions/`](solutions/), when you are stuck or done
 
 Worked answers, each with a try-first warning at the top:
 
-- `solutions/01_add_sin.md`: adding a new op (`sin`) to all three classes,
-  with the exact code and the checks to run against finite differences and
-  the adjoint identity. This is the best first exercise; after it,
-  "registering an op" in a real framework is no longer mysterious.
-- `solutions/02_break_newton.md`: running Newton's method into a saddle point
-  on purpose, why the Hessian explains it, and a damped fix.
-- `solutions/03_zero_grad.md`: what happens when you skip `zero_grad()`, and
-  why gradient accumulation is correct within one backward pass but wrong
-  across steps.
-- `solutions/README.md`: answers to the guide's warm-up exercises and sketches
-  for the open ones (the condition-number sweep, measuring the GPT's
-  curvature, an op-count version of the benchmark).
+- [`solutions/01_add_sin.md`](solutions/01_add_sin.md): adding a new op
+  (`sin`) to all three classes, with the exact code and the checks to run
+  against finite differences and the adjoint identity. This is the best first
+  exercise; after it, "registering an op" in a real framework is no longer
+  mysterious.
+- [`solutions/02_break_newton.md`](solutions/02_break_newton.md): running
+  Newton's method into a saddle point on purpose, why the Hessian explains
+  it, and a damped fix.
+- [`solutions/03_zero_grad.md`](solutions/03_zero_grad.md): what happens when
+  you skip `zero_grad()`, and why gradient accumulation is correct within one
+  backward pass but wrong across steps.
+- [`solutions/README.md`](solutions/README.md): answers to the guide's
+  warm-up exercises and sketches for the open ones (the condition-number
+  sweep, measuring the GPT's curvature, an op-count version of the
+  benchmark).
 
-### 5. `NOTES.md`, the write-up
+### 5. [`NOTES.md`](NOTES.md), the write-up
 
 What I learned building each piece, in the order I built them: the bugs that
 left regression tests behind (the cross-entropy clamp, the recursion limit,

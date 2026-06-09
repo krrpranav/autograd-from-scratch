@@ -9,7 +9,7 @@ at the point where you have just learned enough to do them.
 
 What you need coming in: comfortable Python, the single-variable chain rule,
 and a little linear algebra (matrix times vector). Section 0 builds the rest.
-If autodiff is completely new, run `walkthrough.ipynb` first; it constructs
+If autodiff is completely new, run [`walkthrough.ipynb`](walkthrough.ipynb) first; it constructs
 the scalar engine one cell at a time.
 
 Run everything up front so the outputs are real to you:
@@ -114,12 +114,12 @@ A reading order for `engine.py`, if you read one method at a time: `__add__`
 Exercise 1 (warm-up): on paper, predict all the gradients of
 $g = \text{relu}(a \cdot b + a)$ at $a = 2$, $b = -3$, then build it with
 `Tensor` and check with `backward()` and `viz.draw_dot`. Answer in
-`solutions/README.md`.
+[`solutions/README.md`](solutions/README.md).
 
 Exercise 2 (warm-up): call `backward()` twice on two graphs that share a leaf,
 without zeroing the gradient in between. Explain the number you get. This is
 why training loops call `zero_grad()` every step. Answer in
-`solutions/03_zero_grad.md`.
+[`solutions/03_zero_grad.md`](solutions/03_zero_grad.md).
 
 ## 2. Broadcasting: where tensor gradients go wrong
 
@@ -236,7 +236,7 @@ Exercise 3: add `sin` to all three classes (`Tensor`, `Dual`, `Dual2`). You
 need its value, first derivative, and second derivative, and you can check
 your work against finite differences, the adjoint identity, and the
 curvature-vs-PyTorch test, none of which you have to write. Full solution
-with diffs in `solutions/01_add_sin.md`. After this you know what
+with diffs in [`solutions/01_add_sin.md`](solutions/01_add_sin.md). After this you know what
 "registering an op" is in a real framework.
 
 ## 6. Differentiating through an optimizer (`implicit.py`)
@@ -294,7 +294,7 @@ covers the saddle.
 Exercise 4: break Newton on purpose. Run `newton_minimize` on
 $f = x_0^2 - x_1^2$ and watch it head for the saddle. Explain why from the
 Hessian, then fix it with damping ($H + \mu I$). Worked answer in
-`solutions/02_break_newton.md`.
+[`solutions/02_break_newton.md`](solutions/02_break_newton.md).
 
 ## 8. Curvature of the trained network (`landscape.py`)
 
@@ -315,7 +315,7 @@ eigenvalue against `np.linalg.eigvalsh`.
 Exercise 5 (open): do the same for the GPT. Express `train_gpt.py`'s loss as
 a function of its parameter vector, measure its sharpness, or go further and
 slice a 2-D landscape over the top two eigenvectors. Sketch in
-`solutions/README.md`.
+[`solutions/README.md`](solutions/README.md).
 
 ## 9. The training loop (`nn.py`, `train_mlp.py`, `train_gpt.py`)
 
@@ -357,7 +357,7 @@ crossover becomes machine-independent.
 ## Rebuilding it yourself
 
 The strongest way through this material is to write the engine against the
-same oracle tests. `challenge/` contains skeleton files with the contracts
+same oracle tests. [`challenge/`](challenge/) contains skeleton files with the contracts
 documented and bodies left to you, plus numbered checkpoint tests:
 
 ```bash
