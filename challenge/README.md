@@ -33,6 +33,10 @@ The shared finite-difference checker lives in `_check.py`.
 - Edit only `engine_skeleton.py` and `dual_skeleton.py`. Each method's
   docstring states its contract and the derivative rule it needs.
 - Peek at `autograd/engine.py` / `autograd/dual.py` only when stuck.
+- Fair warning on the first bite: checkpoint 01's first green test already
+  needs `__add__`, the same-shape path of `_unbroadcast`, and a working
+  `backward()`. A recursive topological sort is fine until checkpoint 02's
+  2000-node chain makes you go iterative.
 
 ## How we verify the checkpoints are passable
 

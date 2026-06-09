@@ -1,6 +1,6 @@
 # Solutions
 
-Worked answers for the GUIDE.md explorations. Try each exercise before
+Worked answers for the GUIDE.md exercises. Try each exercise before
 opening its file; the point of the exercises is the attempt, and every one of
 them comes with an oracle (finite differences, the adjoint identity, the
 existing tests) that tells you on its own whether your answer is right.
@@ -31,11 +31,33 @@ f.backward()
 print(a.grad, b.grad, c.grad)   # -0.004023  0.002682  0.001341
 ```
 
-## Sketches for the open explorations
+## Exercise 1: gradients of g = relu(a*b + a) by hand
+
+For $a = 2$, $b = -3$: the inner value is $ab + a = -6 + 2 = -4$, so the relu
+is inactive ($g = 0$) and its local derivative is 0. Every upstream gradient
+is multiplied by that 0, so all three gradients are 0, even though $a$ feeds
+the expression twice. That is the instructive part: the two-path accumulation
+for $a$ (which would give $b + 1 = -2$ inside the relu) is real, but a dead
+relu kills the whole path.
+
+```python
+from autograd.engine import Tensor
+a, b = Tensor(2.0), Tensor(-3.0)
+g = (a * b + a).relu()
+g.backward()
+print(a.grad, b.grad)   # 0.0  0.0
+```
+
+Change $a$ to a value that keeps the relu active (try $a = 2$, $b = 1$: inner
+value 4) and the same two-path reasoning gives
+$\partial g/\partial a = b + 1 = 2$ and $\partial g/\partial b = a = 2$,
+which `backward()` confirms.
+
+## Sketches for the open exercises
 
 These stay open; the notes below are starting points, not answers.
 
-Condition-number sweep (GUIDE exploration 3). Use the quadratic
+Condition-number sweep (GUIDE Exercise 6). Use the quadratic
 $f(x) = \tfrac12 (x_0^2 + \kappa x_1^2)$ and sweep
 $\kappa \in \{1, 10, 10^2, 10^3, 10^4\}$. Newton solves it in one step at any
 $\kappa$; gradient descent with the best fixed step converges at rate
@@ -45,7 +67,7 @@ linearly in $\kappa$. Count both and plot. For the size question, note that
 an $O(n^3)$ solve; time it against the iteration count gradient descent
 needs as $n$ grows.
 
-Hv on the GPT (GUIDE exploration 4). `examples/landscape.py` is the template: it
+Hv on the GPT (GUIDE Exercise 5). `examples/landscape.py` is the template: it
 flattens the MLP's parameters into one vector, defines `loss(vector)` by
 unflattening into the model, and feeds that to `hvp` / `top_eigenvalue`. Do
 the same with `examples/train_gpt.py`'s loss. Each `Hv` is one forward and one
@@ -54,7 +76,7 @@ iterations first, then scale up. The 2D version walks the loss over the span
 of the top two eigenvectors (get the second by power-iterating on
 $H v - \lambda_1 (v_1^\top v) v_1$, the deflated operator).
 
-Op-count benchmark (GUIDE exploration 5). Wall clock depends on the machine;
+Op-count benchmark (GUIDE Exercise 7). Wall clock depends on the machine;
 op counts do not. Add a module-level counter to `autograd/engine.py` and `autograd/dual.py`
 (increment once per op call), reset it, run `jacobian_forward` and
 `jacobian_reverse` from `autograd/dual.py`, and read it back. Forward mode should

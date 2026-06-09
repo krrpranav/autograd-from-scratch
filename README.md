@@ -19,6 +19,10 @@ case. Everything in this repo is one of those two ideas, or the two composed.
 
 ## Quickstart
 
+The only tool you need installed is [uv](https://docs.astral.sh/uv/)
+(`brew install uv`, or the one-line installer on its site); it fetches
+Python 3.12 and every dependency itself.
+
 ```bash
 uv sync                        # numpy for the engine; torch and pytest for the tests
 uv run python -m pytest -q     # gradient checks, the adjoint identity, second order
@@ -86,8 +90,8 @@ tests that verify mine. The challenge directory has two skeleton files
 (`engine_skeleton.py`, `dual_skeleton.py`) where every method states its
 contract and raises `NotImplementedError`, plus checkpoint tests numbered in
 build order: scalar ops, the backward walk, unbroadcasting, matmul, the
-remaining ops, forward mode, and finally the adjoint identity binding your two
-engines together.
+remaining ops, and finally forward mode plus the adjoint identity binding
+your two engines together.
 
 The loop is one command:
 
@@ -108,9 +112,9 @@ Worked answers, each with a try-first warning at the top:
 
 - [`solutions/01_add_sin.md`](solutions/01_add_sin.md): adding a new op
   (`sin`) to all three classes, with the exact code and the checks to run
-  against finite differences and the adjoint identity. This is the best first
-  exercise; after it, "registering an op" in a real framework is no longer
-  mysterious.
+  against finite differences and the adjoint identity. This is the first
+  exercise with a full solution; after it, "registering an op" in a real
+  framework is no longer mysterious.
 - [`solutions/02_break_newton.md`](solutions/02_break_newton.md): running
   Newton's method into a saddle point on purpose, why the Hessian explains
   it, and a damped fix.
@@ -137,12 +141,12 @@ Numbers from the current code; `reproduce.py` reruns all of them.
 
 - Per-op reverse-mode gradients match PyTorch to 1e-7, and a separate
   finite-difference check needs no framework at all (`tests/test_engine.py`).
-- Forward and reverse mode agree as adjoints: $\langle u, Jv \rangle =
-  \langle J^\top u, v \rangle$ to 1e-10, and full Jacobians built column-wise
-  (forward) and row-wise (reverse) match (`tests/test_dual.py`).
+- Forward and reverse mode agree as adjoints: $\langle u, Jv \rangle = \langle J^\top u, v \rangle$ to 1e-10,
+  and full Jacobians built column-wise (forward) and row-wise (reverse) match
+  (`tests/test_dual.py`).
 - Second derivatives match PyTorch's double-backward to 1e-8. Newton's method
   with exact curvature reaches the minimum of a smooth bowl in about 4 steps;
-  gradient descent at lr 0.1 takes 50 (`autograd/secondorder.py`).
+  gradient descent at learning rate 0.1 takes 50 (`autograd/secondorder.py`).
 - Implicit differentiation through an argmin matches the closed-form ridge
   derivative to about 1e-16 (`autograd/implicit.py`).
 - Hessian-vector products, computed forward-over-reverse without building the
@@ -170,7 +174,7 @@ Numbers from the current code; `reproduce.py` reruns all of them.
 | [`viz.py`](autograd/viz.py) | Renders a computation graph (values and grads) to SVG |
 | **[`examples/`](examples/) — things the engine does** | |
 | [`train_mlp.py`](examples/train_mlp.py) | An MLP on a spiral |
-| [`train_gpt.py`](examples/train_gpt.py) | A small multi-head causal Transformer, trained end to end |
+| [`train_gpt.py`](examples/train_gpt.py) | A small causal Transformer, trained end to end ([minimal-gpt](https://github.com/krrpranav/minimal-gpt) explains the architecture) |
 | [`landscape.py`](examples/landscape.py) | Curvature of the trained MLP via the engine's own Hv |
 | [`benchmark.py`](examples/benchmark.py) | Forward vs reverse cost of a full Jacobian, measured |
 | [`figures.py`](examples/figures.py) | Regenerates the explainer diagrams in `assets/` |

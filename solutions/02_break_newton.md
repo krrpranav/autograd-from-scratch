@@ -1,6 +1,6 @@
 # Breaking Newton on a saddle
 
-Try the exercise yourself first (GUIDE.md, exploration 2). This file is the
+Try the exercise yourself first (GUIDE.md, Exercise 4). This file is the
 worked answer to check against.
 
 ## What happens

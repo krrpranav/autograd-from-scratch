@@ -35,18 +35,26 @@ For a function with several inputs, the gradient collects one sensitivity per
 input: $\nabla f = (\partial f/\partial x_1, \ldots, \partial f/\partial x_n)$.
 
 For a function with several inputs *and* several outputs, the sensitivities
-form a matrix, the Jacobian: $J_{ij} = \partial(\text{output}_i) /
-\partial(\text{input}_j)$. Worked example: $f(x, y) = (xy,\; x + y)$ has
+form a matrix, the Jacobian: row $i$, column $j$ holds
+$\partial(\text{output}_i) / \partial(\text{input}_j)$.
+Worked example: $f(x, y) = (xy,\; x + y)$ has
 
 $$J = \begin{pmatrix} y & x \\ 1 & 1 \end{pmatrix},
 \qquad \text{at } (2, 3):\;
 \begin{pmatrix} 3 & 2 \\ 1 & 1 \end{pmatrix}$$
 
 The chain rule for composed functions is matrix multiplication of Jacobians:
-$J_{g \circ f}(x) = J_g(f(x)) \cdot J_f(x)$. That is the whole secret of
-autodiff: every program is a composition of small functions whose Jacobians we
-know, so its derivative is a product of known matrices, and the two autodiff
-modes are just the two sensible orders to multiply them in.
+$J_{g \circ f}(x) = J_g(f(x)) \cdot J_f(x)$. To see it once, feed the example
+above into $g(u, v) = u + v$, so that $g(f(x, y)) = xy + x + y$. The Jacobian
+of $g$ is the row $(1 \;\; 1)$, and at $(2, 3)$ the product is
+
+$$(1 \;\; 1) \begin{pmatrix} 3 & 2 \\ 1 & 1 \end{pmatrix} = (4 \;\; 3)$$
+
+which matches differentiating $xy + x + y$ directly:
+$(y + 1,\; x + 1) = (4, 3)$. That is the whole secret of autodiff: every
+program is a composition of small functions whose Jacobians we know, so its
+derivative is a product of known matrices, and the two autodiff modes are just
+the two sensible orders to multiply them in.
 
 The Hessian $H$ is the matrix of second derivatives of a scalar function,
 $H_{ij} = \partial^2 f / \partial x_i \partial x_j$. It describes curvature.
@@ -124,10 +132,13 @@ why training loops call `zero_grad()` every step. Answer in
 ## 2. Broadcasting: where tensor gradients go wrong
 
 NumPy silently stretches a `(C,)` bias to match a `(B, T, C)` activation in
-the forward pass. The backward pass must undo this: the gradient arriving at
-the stretched value has shape `(B, T, C)`, and the bias needs shape `(C,)`.
-The adjoint of broadcast is sum, so `_unbroadcast` sums the gradient back down
-over the stretched axes.
+the forward pass. (Shapes like this appear because tensor engines process a
+whole batch at once: `B` examples, `T` positions in a sequence, `C` feature
+channels.) The backward pass must undo the stretch: the gradient arriving at
+the broadcast value has shape `(B, T, C)`, and the bias needs shape `(C,)`.
+Undoing a broadcast means summing over the stretched axes, which is what
+`_unbroadcast` does. (This undo-the-operation idea is the adjoint, which
+Section 4 makes precise.)
 
 ![Forward: a (3,) bias is broadcast to (4,3). Backward: the (4,3) gradient sums back down to (3,)](assets/unbroadcast.svg)
 
@@ -190,6 +201,9 @@ directions of one linear map, which forces, for any $u$ and $v$:
 
 $$\langle u,\; J v \rangle \;=\; \langle J^\top u,\; v \rangle$$
 
+(The angle brackets are just the dot product: $\langle u, w \rangle$ is
+`(u * w).sum()`.)
+
 ![Forward mode pushes a tangent v through J; reverse mode pulls a cotangent u through J transpose](assets/forward_vs_reverse.svg)
 
 This identity is the strongest correctness check in the project, because it
@@ -198,6 +212,13 @@ anywhere, the two inner products separate immediately. `test_dual.py` requires
 the gap below 1e-10 over repeated random draws; in practice it sits at
 floating-point zero. `autograd/dual.py` also builds full Jacobians both ways (column by
 column forward, row by row reverse) and compares them entry by entry.
+
+Two notes on the road from here. You have now seen everything the
+[`challenge/`](challenge/) checkpoints test, so if you want to rebuild the
+engine yourself, this is the moment to fork off and come back. And Sections 5
+to 8 are second-order material that Section 9 does not depend on: if you came
+for backprop and training, you can jump straight to Section 9 and return to
+the curvature sections later.
 
 ## 5. Second order (`autograd/secondorder.py`)
 
@@ -219,8 +240,9 @@ $$H_{ij} = \tfrac{1}{2}\left(q(e_i + e_j) - q(e_i) - q(e_j)\right),
 
 and Newton's method, $x \leftarrow x - H^{-1} \nabla f$, follows from that.
 Run `autograd/secondorder.py`: on a smooth two-variable bowl, Newton is within 1e-14 of
-the minimum in three or four steps, while gradient descent at lr 0.1 takes 50
-steps to reach 1e-9, because Newton rescales each direction by its curvature.
+the minimum in three or four steps, while gradient descent at a learning rate
+of 0.1 takes 50 steps to reach 1e-9, because Newton rescales each direction by
+its curvature.
 
 The check: $v^\top H v$ and the assembled Hessian match PyTorch's
 double-backward at 1e-8, and the Hessian comes out symmetric
@@ -291,7 +313,8 @@ gradient divides by $d^\top H d = 0$ and goes NaN. Newton-CG truncates at
 negative curvature (the Steihaug rule); `test_newton_cg_finite_on_indefinite`
 covers the saddle.
 
-Exercise 4: break Newton on purpose. Run `newton_minimize` on
+Exercise 4: break Newton on purpose. Run `newton_minimize` (it lives in
+`autograd/secondorder.py`) on
 $f = x_0^2 - x_1^2$ and watch it head for the saddle. Explain why from the
 Hessian, then fix it with damping ($H + \mu I$). Worked answer in
 [`solutions/02_break_newton.md`](solutions/02_break_newton.md).
@@ -340,10 +363,15 @@ with bias correction, SGD), each a few lines on top of the engine, each
 checked against its PyTorch counterpart in `tests/test_nn.py` (Adam is matched
 step for step for 20 steps). `examples/train_gpt.py` is a real decoder-only
 Transformer: multi-head causal attention, pre-norm residual blocks, GELU MLP,
-learned positional embeddings, small only in scale (one layer, width 32). It
-memorizes one line of Shakespeare to loss 0.0002. Both training runs are
-asserted in `tests/test_integration.py`: the per-op tests check single
-gradients, and these check that everything composes.
+learned positional embeddings, small only in scale (one layer, width 32). The
+architecture itself is not this repo's subject; it is the same model as
+[minimal-gpt](https://github.com/krrpranav/minimal-gpt), which builds it piece
+by piece, so read that (or Karpathy's "Let's build GPT") if attention is new
+to you. It memorizes one line of Shakespeare to loss 0.0002, which is
+deliberate overfitting used as an end-to-end gradient check; in real training,
+driving the loss to zero like this would be the thing you avoid. Both training
+runs are asserted in `tests/test_integration.py`: the per-op tests check
+single gradients, and these check that everything composes.
 
 Exercise 6 (open): find where curvature stops paying. Vary the conditioning
 of a quadratic and count Newton steps vs gradient-descent steps to fixed
@@ -388,3 +416,10 @@ adjoint identity binding your two engines together.
 | power iteration | repeated $v \leftarrow Hv / \lVert Hv \rVert$ to find the top eigenvector |
 | conjugate gradient | iterative solver for $Hp = b$ using only matrix-vector products |
 | implicit function theorem | differentiating a solution through its optimality condition |
+| logits | a model's raw output scores, one per class, before softmax |
+| softmax | exponentiate logits and normalize, turning scores into probabilities |
+| cross-entropy | the classification loss: negative log-probability of the correct class |
+| learning rate | the step size multiplying the gradient in each update |
+| embedding | a learned lookup table mapping a token id to a vector |
+| LayerNorm | normalizes each vector to zero mean and unit variance, then rescales |
+| residual connection | computing $x + f(x)$ so gradients can flow around $f$ |
