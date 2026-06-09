@@ -10,7 +10,7 @@ expression.
 
 import math
 
-from micrograd import Value
+from autograd.micrograd import Value
 
 
 def test_hand_derived_example():

@@ -3,13 +3,13 @@
 A spiral is not linearly separable, so reaching high accuracy requires gradients
 to flow correctly through the full nonlinear network.
 
-    uv run python train_mlp.py
+    uv run python examples/train_mlp.py
 """
 
 import numpy as np
 
-from engine import Tensor, cross_entropy
-from nn import Adam, Linear, Module
+from autograd.engine import Tensor, cross_entropy
+from autograd.nn import Adam, Linear, Module
 
 
 def make_spiral(n_per_class=100, classes=2, seed=0):

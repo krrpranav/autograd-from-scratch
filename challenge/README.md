@@ -1,6 +1,6 @@
 # Build the engine yourself
 
-This folder is a rebuild track for the autodiff engine at the repo root. You
+This folder is a rebuild track for the engine in autograd/. You
 implement a `Tensor` (reverse mode) and a `Dual` (forward mode) from two
 skeleton files, and the checkpoint tests tell you whether each piece is right.
 The oracles are framework-free: central finite differences and, at the end,
@@ -32,12 +32,12 @@ The shared finite-difference checker lives in `_check.py`.
 
 - Edit only `engine_skeleton.py` and `dual_skeleton.py`. Each method's
   docstring states its contract and the derivative rule it needs.
-- Peek at the root `engine.py` / `dual.py` only when stuck.
+- Peek at `autograd/engine.py` / `autograd/dual.py` only when stuck.
 
 ## How we verify the checkpoints are passable
 
 `_impl.py` decides what the tests import. With `CHALLENGE_REFERENCE=1` set,
-they run against the finished root `engine.py` / `dual.py` instead of the
+they run against the finished root `autograd/engine.py` / `autograd/dual.py` instead of the
 skeletons:
 
 ```bash

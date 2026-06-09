@@ -9,8 +9,8 @@ PyTorch's double-backward, and against a finite-difference second derivative.
 import numpy as np
 import torch
 
-from engine import Tensor
-from secondorder import Dual2, directional_curvature, hessian, newton_minimize
+from autograd.engine import Tensor
+from autograd.secondorder import Dual2, directional_curvature, hessian, newton_minimize
 
 rng = np.random.default_rng(0)
 

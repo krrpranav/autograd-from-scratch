@@ -12,12 +12,12 @@ the solution, regardless of how many steps the optimizer took. This is the
 implicit function theorem; the same identity is used in deep equilibrium models
 and in hyperparameter gradients (see also OptNet's optimization layers).
 
-    uv run python implicit.py
+    uv run python autograd/implicit.py
 """
 
 import numpy as np
 
-from secondorder import hessian, newton_minimize
+from autograd.secondorder import hessian, newton_minimize
 
 
 def solution_jacobian(f, x_star, theta):

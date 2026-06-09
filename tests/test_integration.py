@@ -9,8 +9,8 @@ still shape-correct.
 
 import numpy as np
 
-from engine import Tensor, cross_entropy
-from nn import Adam
+from autograd.engine import Tensor, cross_entropy
+from autograd.nn import Adam
 
 
 def test_mlp_reaches_high_train_accuracy():

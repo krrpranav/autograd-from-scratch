@@ -3,8 +3,8 @@ and one rendered node per unique graph node. All output goes to tmp_path."""
 
 import xml.etree.ElementTree as ET
 
-from engine import Tensor
-from viz import draw_dot
+from autograd.engine import Tensor
+from autograd.viz import draw_dot
 
 SVG_NS = "{http://www.w3.org/2000/svg}"
 

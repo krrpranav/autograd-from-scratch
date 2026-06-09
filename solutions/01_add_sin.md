@@ -7,7 +7,7 @@ The three facts you need: the value is $\sin x$, the first derivative is
 $\cos x$, and the second derivative is $-\sin x$. Each engine encodes those
 same facts in its own form.
 
-## 1. `engine.py`: reverse mode
+## 1. `autograd/engine.py`: reverse mode
 
 Add this method to `Tensor`, next to the other elementwise ops (after `tanh`,
 before `gelu`):
@@ -27,7 +27,7 @@ The closure multiplies the incoming gradient by the local derivative
 $\cos x$ and accumulates with `+=`, like every other op. No `_unbroadcast`
 is needed because the shape never changes.
 
-## 2. `dual.py`: forward mode
+## 2. `autograd/dual.py`: forward mode
 
 Add this method to `Dual`, after `tanh`:
 
@@ -48,7 +48,7 @@ through `sin` would treat $\cos x$ as a constant and miss its derivative.
 Making `hvp` exact through `sin` needs a `Tensor.cos` and a `_sin`/`_cos`
 routing helper like `_tanh`.
 
-## 3. `secondorder.py`: order-2 duals
+## 3. `autograd/secondorder.py`: order-2 duals
 
 Add this method to `Dual2`, next to `tanh` and `relu`:
 
@@ -70,7 +70,7 @@ analytic gradient is $\cos x$):
 
 ```python
 import numpy as np
-from engine import Tensor
+from autograd.engine import Tensor
 
 rng = np.random.default_rng(0)
 a = rng.standard_normal((3, 4))
@@ -92,7 +92,7 @@ The adjoint identity $\langle u, Jv \rangle = \langle J^\top u, v \rangle$,
 which exercises the `Tensor` and `Dual` versions against each other:
 
 ```python
-from dual import adjoint_gap
+from autograd.dual import adjoint_gap
 
 W = rng.standard_normal((4, 3))
 
@@ -110,7 +110,7 @@ Curvature from `Dual2` (for $f = \sum \sin x_i$ the Hessian is
 $\mathrm{diag}(-\sin x)$, so $v^\top H v = -\sum_i \sin(x_i)\, v_i^2$):
 
 ```python
-from secondorder import directional_curvature
+from autograd.secondorder import directional_curvature
 
 aa, vv = rng.standard_normal(5), rng.standard_normal(5)
 t2, t1 = directional_curvature(lambda z: z.sin().sum(), aa, vv)

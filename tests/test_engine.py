@@ -10,7 +10,7 @@ Two independent checks per op:
 import numpy as np
 import torch
 
-from engine import Tensor, cross_entropy
+from autograd.engine import Tensor, cross_entropy
 
 rng = np.random.default_rng(0)
 

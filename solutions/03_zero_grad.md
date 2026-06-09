@@ -1,13 +1,13 @@
 # Why `zero_grad` exists
 
 Try to predict the outputs below before running anything. The snippets were
-all run against the repo's `engine.py`; the printed values are real.
+all run against the repo's `autograd/engine.py`; the printed values are real.
 
 ## The demo
 
 ```python
 import numpy as np
-from engine import Tensor
+from autograd.engine import Tensor
 
 # call backward twice on the same graph
 x = Tensor(np.array([1.0, 2.0]))
@@ -56,6 +56,6 @@ The closure that runs at each node has no way to tell "second consumer inside
 this graph" (must add) apart from "first pass of a new training step" (must
 start from zero). Both look like `self.grad += ...`. So the reset between
 steps has to be a separate, explicit operation, and that is all `zero_grad`
-is: `nn.py`'s `Module.zero_grad` and both optimizers loop over the parameters
+is: `autograd/nn.py`'s `Module.zero_grad` and both optimizers loop over the parameters
 and assign `p.grad = np.zeros_like(p.data)`. PyTorch's
 `optimizer.zero_grad()` exists for the same reason.

@@ -23,17 +23,17 @@ case. Everything in this repo is one of those two ideas, or the two composed.
 uv sync                        # numpy for the engine; torch and pytest for the tests
 uv run python -m pytest -q     # gradient checks, the adjoint identity, second order
 
-uv run python micrograd.py     # scalar engine, gradients worked out by hand
-uv run python dual.py          # forward vs reverse: the adjoint identity
-uv run python secondorder.py   # exact curvature, Newton vs gradient descent
-uv run python implicit.py      # differentiate through an argmin
-uv run python hvp.py           # Hessian-vector products without forming H
-uv run python train_mlp.py     # an MLP on a spiral
-uv run python train_gpt.py     # a tiny GPT, every gradient from engine.py
-uv run python viz.py           # draw the computation graph of an expression
+uv run python autograd/micrograd.py     # scalar engine, gradients worked out by hand
+uv run python autograd/dual.py          # forward vs reverse: the adjoint identity
+uv run python autograd/secondorder.py   # exact curvature, Newton vs gradient descent
+uv run python autograd/implicit.py      # differentiate through an argmin
+uv run python autograd/hvp.py           # Hessian-vector products without forming H
+uv run python examples/train_mlp.py     # an MLP on a spiral
+uv run python examples/train_gpt.py     # a tiny GPT, every gradient from the engine
+uv run python autograd/viz.py           # draw the computation graph of an expression
 
-uv run --group viz python landscape.py   # curvature of the trained MLP
-uv run --group viz python benchmark.py   # forward vs reverse cost measurement
+uv run --group viz python examples/landscape.py   # curvature of the trained MLP
+uv run --group viz python examples/benchmark.py   # forward vs reverse cost measurement
 uv run --group viz python reproduce.py   # rerun everything, regenerate figures
 ```
 
@@ -142,42 +142,47 @@ Numbers from the current code; `reproduce.py` reruns all of them.
   (forward) and row-wise (reverse) match (`tests/test_dual.py`).
 - Second derivatives match PyTorch's double-backward to 1e-8. Newton's method
   with exact curvature reaches the minimum of a smooth bowl in about 4 steps;
-  gradient descent at lr 0.1 takes 50 (`secondorder.py`).
+  gradient descent at lr 0.1 takes 50 (`autograd/secondorder.py`).
 - Implicit differentiation through an argmin matches the closed-form ridge
-  derivative to about 1e-16 (`implicit.py`).
+  derivative to about 1e-16 (`autograd/implicit.py`).
 - Hessian-vector products, computed forward-over-reverse without building the
-  Hessian, match an explicitly assembled Hessian to about 4e-16 (`hvp.py`).
+  Hessian, match an explicitly assembled Hessian to about 4e-16 (`autograd/hvp.py`).
 - The MLP reaches 99.5% on a two-class spiral; the GPT drives its loss from
-  3.15 to 0.0002 and reproduces its training text exactly (`train_gpt.py`).
+  3.15 to 0.0002 and reproduces its training text exactly (`examples/train_gpt.py`).
 - The trained MLP's loss, as a function of all 1218 parameters, has top
   Hessian eigenvalue about 11.8, measured with the engine's own Hessian-vector
-  products (`landscape.py`).
+  products (`examples/landscape.py`).
 
 ![Loss of the trained MLP along the sharpest Hessian direction versus a random one](assets/loss_landscape.svg)
 
 ## Files
 
-| File | What it is |
+| Path | What it is |
 |------|------------|
-| `micrograd.py` | Scalar reverse-mode autograd (Karpathy's micrograd, reimplemented) |
-| `engine.py` | The tensor engine: reverse mode on NumPy arrays, broadcasting-aware backward |
-| `nn.py` | Linear, Embedding, LayerNorm, Adam, SGD, built on the engine |
-| `train_mlp.py` | An MLP on a spiral |
-| `train_gpt.py` | A small multi-head causal Transformer, trained end to end |
-| `viz.py` | Renders a computation graph (values and grads) to SVG |
-| `dual.py` | Forward mode: dual numbers, `jvp`/`vjp`/`jacobian`, the adjoint check |
-| `secondorder.py` | Order-2 duals: exact second derivatives, dense Hessian, Newton |
-| `implicit.py` | Implicit differentiation: gradients through an argmin |
-| `hvp.py` | Hessian-vector products (Pearlmutter), top eigenvalue, Newton-CG |
-| `landscape.py` | Curvature of the trained MLP via the engine's own Hv |
-| `benchmark.py` | Forward vs reverse cost of a full Jacobian, measured |
-| `walkthrough.ipynb` | Build the scalar engine from nothing, step by step |
-| `challenge/` | Rebuild the engine yourself against checkpoint tests |
-| `solutions/` | Worked answers and hints for the exercises |
-| `tests/` | Per-op checks vs PyTorch, finite differences, the adjoint identity |
-| `GUIDE.md` | The walkthrough: prerequisites, hand traces, exercises, glossary |
-| `NOTES.md` | What building this taught me, and what is verified against what |
-| `reproduce.py` | One command: tests, every demo, every figure |
+| **[`autograd/`](autograd/) — the engine** | |
+| [`micrograd.py`](autograd/micrograd.py) | Scalar reverse-mode autograd (Karpathy's micrograd, reimplemented) |
+| [`engine.py`](autograd/engine.py) | The tensor engine: reverse mode on NumPy arrays, broadcasting-aware backward |
+| [`dual.py`](autograd/dual.py) | Forward mode: dual numbers, `jvp`/`vjp`/`jacobian`, the adjoint check |
+| [`secondorder.py`](autograd/secondorder.py) | Order-2 duals: exact second derivatives, dense Hessian, Newton |
+| [`implicit.py`](autograd/implicit.py) | Implicit differentiation: gradients through an argmin |
+| [`hvp.py`](autograd/hvp.py) | Hessian-vector products (Pearlmutter), top eigenvalue, Newton-CG |
+| [`nn.py`](autograd/nn.py) | Linear, Embedding, LayerNorm, Adam, SGD, built on the engine |
+| [`viz.py`](autograd/viz.py) | Renders a computation graph (values and grads) to SVG |
+| **[`examples/`](examples/) — things the engine does** | |
+| [`train_mlp.py`](examples/train_mlp.py) | An MLP on a spiral |
+| [`train_gpt.py`](examples/train_gpt.py) | A small multi-head causal Transformer, trained end to end |
+| [`landscape.py`](examples/landscape.py) | Curvature of the trained MLP via the engine's own Hv |
+| [`benchmark.py`](examples/benchmark.py) | Forward vs reverse cost of a full Jacobian, measured |
+| [`figures.py`](examples/figures.py) | Regenerates the explainer diagrams in `assets/` |
+| **Learning materials** | |
+| [`walkthrough.ipynb`](walkthrough.ipynb) | Build the scalar engine from nothing, step by step |
+| [`GUIDE.md`](GUIDE.md) | The walkthrough: prerequisites, hand traces, exercises, glossary |
+| [`challenge/`](challenge/) | Rebuild the engine yourself against checkpoint tests |
+| [`solutions/`](solutions/) | Worked answers and hints for the exercises |
+| [`NOTES.md`](NOTES.md) | What building this taught me, and what is verified against what |
+| **Verification** | |
+| [`tests/`](tests/) | Per-op checks vs PyTorch, finite differences, the adjoint identity |
+| [`reproduce.py`](reproduce.py) | One command: tests, every demo, every figure |
 
 ## Limitations
 

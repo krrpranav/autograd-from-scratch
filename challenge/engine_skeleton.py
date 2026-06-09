@@ -1,6 +1,6 @@
 """Skeleton of the tensor engine, for rebuilding it yourself.
 
-This mirrors the API of the root engine.py: a `Tensor` wraps a NumPy float64
+This mirrors the API of autograd/engine.py: a `Tensor` wraps a NumPy float64
 array, remembers which Tensors produced it, and fills every `.grad` when
 `backward()` is called on the output. Each method below states its contract
 (shapes, the derivative rule, the hints that matter) and raises

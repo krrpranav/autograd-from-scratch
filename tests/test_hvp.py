@@ -10,8 +10,8 @@ path.
 import numpy as np
 import torch
 
-from hvp import hvp, newton_cg, top_eigenvalue
-from secondorder import hessian
+from autograd.hvp import hvp, newton_cg, top_eigenvalue
+from autograd.secondorder import hessian
 
 
 def _torch_hvp(f_torch, x, v):

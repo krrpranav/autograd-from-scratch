@@ -17,13 +17,13 @@ Run everything up front so the outputs are real to you:
 ```bash
 uv sync
 uv run python -m pytest -q     # the whole suite
-uv run python micrograd.py     # scalar engine, worked example
-uv run python dual.py          # the adjoint identity
-uv run python secondorder.py   # Newton vs gradient descent
-uv run python implicit.py      # differentiate through an argmin
-uv run python hvp.py           # Hessian-vector products
-uv run python viz.py           # draws assets/example_graph.svg
-uv run python train_gpt.py     # the GPT memorizes its line
+uv run python autograd/micrograd.py     # scalar engine, worked example
+uv run python autograd/dual.py          # the adjoint identity
+uv run python autograd/secondorder.py   # Newton vs gradient descent
+uv run python autograd/implicit.py      # differentiate through an argmin
+uv run python autograd/hvp.py           # Hessian-vector products
+uv run python autograd/viz.py           # draws assets/example_graph.svg
+uv run python examples/train_gpt.py     # the GPT memorizes its line
 ```
 
 ## 0. The math you need
@@ -55,7 +55,7 @@ That is all of Part 2.
 A glossary at the end of this guide has one-line definitions for every term
 used below.
 
-## 1. Reverse mode: the chain rule, backward (`micrograd.py`, `engine.py`)
+## 1. Reverse mode: the chain rule, backward (`autograd/micrograd.py`, `autograd/engine.py`)
 
 The question: given a value computed from inputs through many small
 operations, fill in $\partial f / \partial(\text{input})$ for every input, in
@@ -79,7 +79,7 @@ $f = \tanh(4) = 0.999329$. Backward, node by node:
 | $d = e + c$ | $1$ for each input | $0.001341$ | $e$: $0.001341$, $c$: $0.001341$ |
 | $e = a \cdot b$ | $b$ w.r.t. $a$; $a$ w.r.t. $b$ | $0.001341$ | $a$: $-0.004023$, $b$: $0.002682$ |
 
-`viz.py` draws this exact graph with the values and gradients filled in, so
+`autograd/viz.py` draws this exact graph with the values and gradients filled in, so
 you can check the table against the picture:
 
 ![The graph of f = tanh(a*b + c) with each node's value and gradient](assets/example_graph.svg)
@@ -95,7 +95,7 @@ print((f(2 + h) - f(2 - h)) / (2 * h))   # -0.004023..., matches the table
 
 The `+=` matters. A value used in two places gets gradient from both paths;
 plain assignment would keep only the last one and be silently wrong. The
-worked example in `micrograd.py`'s `__main__` exercises exactly this (its `b`
+worked example in `autograd/micrograd.py`'s `__main__` exercises exactly this (its `b`
 feeds two different expressions), and the notebook shows the failure mode on
 purpose.
 
@@ -107,7 +107,7 @@ What broke: the first topological sort was recursive and died on a 5000-node
 chain (Python's recursion limit). `backward()` is iterative for that reason,
 and `test_backward_deep_graph_no_recursion_error` pins it.
 
-A reading order for `engine.py`, if you read one method at a time: `__add__`
+A reading order for `autograd/engine.py`, if you read one method at a time: `__add__`
 (the closure pattern), `backward` (the walk), `_unbroadcast` (next section),
 `__matmul__` (the hardest local rule).
 
@@ -131,7 +131,7 @@ over the stretched axes.
 
 ![Forward: a (3,) bias is broadcast to (4,3). Backward: the (4,3) gradient sums back down to (3,)](assets/unbroadcast.svg)
 
-See it fail: open `engine.py`, remove the `_unbroadcast` call from `__add__`'s
+See it fail: open `autograd/engine.py`, remove the `_unbroadcast` call from `__add__`'s
 backward, and run
 
 ```bash
@@ -148,7 +148,7 @@ logsumexp form fixed it, and `test_cross_entropy_value_extreme_logits` keeps
 it fixed. The lesson I took: numerical-stability hacks can pass every gradient
 check and still be wrong in the forward value.
 
-## 3. Forward mode (`dual.py`)
+## 3. Forward mode (`autograd/dual.py`)
 
 A `Dual` carries `(value, tangent)`, where the tangent is a directional
 derivative, and pushes the tangent through the same local rules the reverse
@@ -158,7 +158,7 @@ direction $v$.
 
 The two modes therefore have opposite costs. A full Jacobian needs one forward
 pass per input column (forward mode) or one backward pass per output row
-(reverse mode). `benchmark.py` measures this on the engine; one curve climbs
+(reverse mode). `examples/benchmark.py` measures this on the engine; one curve climbs
 with the swept dimension while the other stays flat. On my machine the
 crossover lands near twice the predicted $n = m$ point, because each reverse
 pass also re-runs the graph-building forward pass, a constant the
@@ -175,8 +175,8 @@ everyday gradient is $u = 1$. Concretely:
 
 ```python
 import numpy as np
-from dual import vjp
-from engine import Tensor
+from autograd.dual import vjp
+from autograd.engine import Tensor
 
 f = lambda x: (x ** 2).sum()
 x = np.array([1.0, 2.0])
@@ -196,10 +196,10 @@ This identity is the strongest correctness check in the project, because it
 needs no reference implementation: if the forward and reverse code disagree
 anywhere, the two inner products separate immediately. `test_dual.py` requires
 the gap below 1e-10 over repeated random draws; in practice it sits at
-floating-point zero. `dual.py` also builds full Jacobians both ways (column by
+floating-point zero. `autograd/dual.py` also builds full Jacobians both ways (column by
 column forward, row by row reverse) and compares them entry by entry.
 
-## 5. Second order (`secondorder.py`)
+## 5. Second order (`autograd/secondorder.py`)
 
 Carry a second tangent and the same machinery yields exact second
 derivatives. The rule for a unary $g$ comes from differentiating the chain
@@ -218,7 +218,7 @@ $$H_{ij} = \tfrac{1}{2}\left(q(e_i + e_j) - q(e_i) - q(e_j)\right),
 \qquad q(v) = v^\top H v$$
 
 and Newton's method, $x \leftarrow x - H^{-1} \nabla f$, follows from that.
-Run `secondorder.py`: on a smooth two-variable bowl, Newton is within 1e-14 of
+Run `autograd/secondorder.py`: on a smooth two-variable bowl, Newton is within 1e-14 of
 the minimum in three or four steps, while gradient descent at lr 0.1 takes 50
 steps to reach 1e-9, because Newton rescales each direction by its curvature.
 
@@ -239,7 +239,7 @@ curvature-vs-PyTorch test, none of which you have to write. Full solution
 with diffs in [`solutions/01_add_sin.md`](solutions/01_add_sin.md). After this you know what
 "registering an op" is in a real framework.
 
-## 6. Differentiating through an optimizer (`implicit.py`)
+## 6. Differentiating through an optimizer (`autograd/implicit.py`)
 
 Let $x^\star(t) = \arg\min_x f(x, t)$. What is $dx^\star/dt$? My first
 instinct was to unroll the optimizer and backpropagate through every step. No
@@ -262,7 +262,7 @@ the two agree to about 1e-16; on a non-quadratic problem, implicit
 differentiation matches finite differences of re-solved argmins at about
 8e-12 (`tests/test_implicit.py`).
 
-## 7. Hessian-vector products (`hvp.py`)
+## 7. Hessian-vector products (`autograd/hvp.py`)
 
 The Hessian of a real model is too big to form, but most second-order methods
 only need $Hv$. Pearlmutter's trick:
@@ -277,7 +277,7 @@ and $Hv$ appears in the input's gradient.
 
 ![Seed a Dual whose primal is a Tensor; the output tangent is grad f dot v; backprop gives H v](assets/hvp_forward_over_reverse.svg)
 
-Note what was never written: a second-derivative rule for this path. `dual.py`
+Note what was never written: a second-derivative rule for this path. `autograd/dual.py`
 knows only first derivatives; reverse mode differentiates the tangent
 computation a second time on its own.
 
@@ -296,9 +296,9 @@ $f = x_0^2 - x_1^2$ and watch it head for the saddle. Explain why from the
 Hessian, then fix it with damping ($H + \mu I$). Worked answer in
 [`solutions/02_break_newton.md`](solutions/02_break_newton.md).
 
-## 8. Curvature of the trained network (`landscape.py`)
+## 8. Curvature of the trained network (`examples/landscape.py`)
 
-`landscape.py` points the second-order tools at a real model: it writes the
+`examples/landscape.py` points the second-order tools at a real model: it writes the
 trained MLP's loss as a function of its flat 1218-parameter vector and calls
 the same `hvp`. Power iteration finds the top Hessian eigenvalue,
 about 11.8 at the trained optimum. Slicing the loss along that eigenvector
@@ -312,14 +312,14 @@ The check on the method: `tests/test_landscape.py` compares parameter-space
 `Hv` against a dense Hessian on a small network, and the power-iteration
 eigenvalue against `np.linalg.eigvalsh`.
 
-Exercise 5 (open): do the same for the GPT. Express `train_gpt.py`'s loss as
+Exercise 5 (open): do the same for the GPT. Express `examples/train_gpt.py`'s loss as
 a function of its parameter vector, measure its sharpness, or go further and
 slice a 2-D landscape over the top two eigenvectors. Sketch in
 [`solutions/README.md`](solutions/README.md).
 
-## 9. The training loop (`nn.py`, `train_mlp.py`, `train_gpt.py`)
+## 9. The training loop (`autograd/nn.py`, `examples/train_mlp.py`, `examples/train_gpt.py`)
 
-The loop in `train_mlp.py` is the same loop as every PyTorch script:
+The loop in `examples/train_mlp.py` is the same loop as every PyTorch script:
 
 ```python
 for step in range(400):
@@ -335,10 +335,10 @@ for step in range(400):
 paths) and wrong *across* steps. Skip it and your gradients double; warm-up
 exercise 2 has you observe this directly.
 
-`nn.py` holds the layers (Linear, Embedding, LayerNorm) and optimizers (Adam
+`autograd/nn.py` holds the layers (Linear, Embedding, LayerNorm) and optimizers (Adam
 with bias correction, SGD), each a few lines on top of the engine, each
 checked against its PyTorch counterpart in `tests/test_nn.py` (Adam is matched
-step for step for 20 steps). `train_gpt.py` is a real decoder-only
+step for step for 20 steps). `examples/train_gpt.py` is a real decoder-only
 Transformer: multi-head causal attention, pre-norm residual blocks, GELU MLP,
 learned positional embeddings, small only in scale (one layer, width 32). It
 memorizes one line of Shakespeare to loss 0.0002. Both training runs are

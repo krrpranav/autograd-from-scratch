@@ -19,14 +19,14 @@ the Tensor's grad is H v, all in one forward-over-reverse pass.
 Note the second derivative is never written by hand: dual.py only knows each op's
 first derivative, and reverse mode differentiates that a second time on its own.
 
-    uv run python hvp.py
+    uv run python autograd/hvp.py
 """
 
 import numpy as np
 
-from dual import Dual
-from engine import Tensor
-from secondorder import gradient, hessian
+from autograd.dual import Dual
+from autograd.engine import Tensor
+from autograd.secondorder import gradient, hessian
 
 
 def hvp(f, x, v):

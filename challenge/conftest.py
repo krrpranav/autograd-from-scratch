@@ -2,7 +2,7 @@
 
 Puts this directory and the repo root on sys.path so the checkpoint tests can
 import the local helpers (_impl, _check) and the skeletons, and so _impl.py
-can reach the root engine.py/dual.py when CHALLENGE_REFERENCE=1 is set. The
+can reach autograd/engine.py and autograd/dual.py when CHALLENGE_REFERENCE=1 is set. The
 implementation switch itself lives in _impl.py.
 """
 

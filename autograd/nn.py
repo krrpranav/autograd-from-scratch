@@ -6,7 +6,7 @@ automatically. PyTorch is used only in the tests, as a reference.
 
 import numpy as np
 
-from engine import Tensor
+from autograd.engine import Tensor
 
 
 class Module:

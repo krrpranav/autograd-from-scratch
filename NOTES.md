@@ -13,7 +13,7 @@ nowhere else.
 
 ## Reverse mode on arrays
 
-The scalar version (`micrograd.py`) is micrograd, reimplemented line by line to
+The scalar version (`autograd/micrograd.py`) is micrograd, reimplemented line by line to
 understand it. Each `Value` stores the operation that produced it and a closure
 holding that operation's local derivative; `backward()` topologically sorts the
 graph and walks it in reverse, accumulating gradients with `+=`. The
@@ -21,7 +21,7 @@ accumulation matters: a value used in two places receives gradient from both
 paths, and `=` instead of `+=` silently gives wrong answers. The notebook
 (`walkthrough.ipynb`) demonstrates that bug on purpose.
 
-Lifting this to NumPy arrays (`engine.py`) added one real difficulty:
+Lifting this to NumPy arrays (`autograd/engine.py`) added one real difficulty:
 broadcasting. When a `(C,)` bias is broadcast against a `(B, T, C)` activation
 in the forward pass, the backward pass has to sum the gradient back down to
 `(C,)`. `_unbroadcast` does this, and most of the gradient bugs I had were in
@@ -42,7 +42,7 @@ Two things broke in this phase that left scars in the test suite:
 
 ## Forward mode, and the identity that ties the modes together
 
-A `Dual` (`dual.py`) carries a value and a tangent, a directional derivative,
+A `Dual` (`autograd/dual.py`) carries a value and a tangent, a directional derivative,
 and pushes the tangent forward through the same local rules. No graph, no
 reverse pass. One forward pass produces a Jacobian-vector product $Jv$.
 
@@ -54,7 +54,7 @@ $$\langle u, Jv \rangle = \langle J^\top u, v \rangle$$
 
 This identity is a correctness oracle that does not depend on PyTorch at all.
 If either implementation is wrong anywhere, the two inner products stop
-matching. The test suite requires the gap to be below 1e-10; running `dual.py`
+matching. The test suite requires the gap to be below 1e-10; running `autograd/dual.py`
 prints the two sides agreeing to all printed digits, with a gap of 0.00e+00 on
 my machine. I came to trust this check more than any single per-op test,
 because it cross-examines both modes at once.
@@ -67,7 +67,7 @@ makes that literal.
 
 Forward mode builds a Jacobian one column per input; reverse mode builds it one
 row per output. So forward should win with few inputs, reverse with few
-outputs, crossing near square. I had only ever read this, so `benchmark.py`
+outputs, crossing near square. I had only ever read this, so `examples/benchmark.py`
 times both on the engine while sweeping one dimension.
 
 The shape came out as predicted: one curve rises with the swept dimension, the
@@ -82,7 +82,7 @@ more than the clean version would have.
 
 ## Second order, without finite differences
 
-Carrying a second tangent (`Dual2` in `secondorder.py`) gives exact second
+Carrying a second tangent (`Dual2` in `autograd/secondorder.py`) gives exact second
 derivatives. The local rules are the chain rule differentiated once more; for
 unary $g$:
 
@@ -116,7 +116,7 @@ where $H_{xx}$ and $H_{x\theta}$ are blocks of the Hessian of $f$ in the
 stacked variable $(x, \theta)$. One Hessian and one linear solve, regardless of
 how many iterations the optimizer ran. This is the implicit function theorem,
 the same mechanism used by deep equilibrium models and differentiable
-optimization layers. `implicit.py` checks it on ridge regression against the
+optimization layers. `autograd/implicit.py` checks it on ridge regression against the
 closed-form derivative (max abs error about 1e-16) and on a non-quadratic
 problem against finite-differenced argmins (about 8e-12).
 
@@ -134,8 +134,8 @@ $\nabla f \cdot v$ as a graph-tracked `Tensor`; backpropagating it leaves $Hv$
 in the input's gradient.
 
 The part I did not expect: I never wrote a second-derivative rule for this
-path. `dual.py` only knows first derivatives, and reverse mode differentiates
-the tangent computation a second time on its own. `hvp.py`'s result matches an
+path. `autograd/dual.py` only knows first derivatives, and reverse mode differentiates
+the tangent computation a second time on its own. `autograd/hvp.py`'s result matches an
 explicitly assembled Hessian times $v$ at about 4e-16, and matches PyTorch's
 double-backward, which reaches $Hv$ by a different composition
 (reverse-over-reverse).

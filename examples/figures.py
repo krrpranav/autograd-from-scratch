@@ -9,7 +9,7 @@ dashed red for the backward pass.
     hvp_forward_over_reverse.svg  forward-over-reverse pipeline for Hv
     unbroadcast.svg               broadcast forward, sum backward
 
-    uv run --group viz python figures.py
+    uv run --group viz python examples/figures.py
 """
 
 import matplotlib

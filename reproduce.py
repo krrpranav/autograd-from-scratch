@@ -14,20 +14,20 @@ import sys
 
 STEPS = [
     (["-m", "pytest", "-q"], "the full test suite"),
-    (["micrograd.py"], "scalar autograd, gradients worked out by hand"),
-    (["dual.py"], "forward vs reverse: the adjoint identity"),
-    (["secondorder.py"], "exact curvature, then Newton vs gradient descent"),
-    (["implicit.py"], "differentiate through an argmin"),
-    (["hvp.py"], "Hessian-vector products, top eigenvalue, Newton-CG"),
-    (["train_mlp.py"], "an MLP on a spiral"),
-    (["train_gpt.py"], "a tiny GPT trained on the engine"),
-    (["landscape.py"], "curvature of the trained MLP  ->  assets/loss_landscape.svg"),
+    (["autograd/micrograd.py"], "scalar autograd, gradients worked out by hand"),
+    (["autograd/dual.py"], "forward vs reverse: the adjoint identity"),
+    (["autograd/secondorder.py"], "exact curvature, then Newton vs gradient descent"),
+    (["autograd/implicit.py"], "differentiate through an argmin"),
+    (["autograd/hvp.py"], "Hessian-vector products, top eigenvalue, Newton-CG"),
+    (["examples/train_mlp.py"], "an MLP on a spiral"),
+    (["examples/train_gpt.py"], "a tiny GPT trained on the engine"),
+    (["examples/landscape.py"], "curvature of the trained MLP  ->  assets/loss_landscape.svg"),
     (
-        ["benchmark.py"],
+        ["examples/benchmark.py"],
         "forward vs reverse cost crossover  ->  assets/mode_crossover.svg",
     ),
-    (["viz.py"], "a real computation graph  ->  assets/example_graph.svg"),
-    (["figures.py"], "explainer diagrams  ->  assets/*.svg"),
+    (["autograd/viz.py"], "a real computation graph  ->  assets/example_graph.svg"),
+    (["examples/figures.py"], "explainer diagrams  ->  assets/*.svg"),
 ]
 
 

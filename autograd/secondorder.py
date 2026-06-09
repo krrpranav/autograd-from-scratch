@@ -21,7 +21,7 @@ For a product they come from differentiating a*b twice (note the cross term):
 
 import numpy as np
 
-from engine import GELU_C, GELU_CUBIC, Tensor, _as_tuple, _norm_shape
+from autograd.engine import GELU_C, GELU_CUBIC, Tensor, _as_tuple, _norm_shape
 
 
 class Dual2:

@@ -8,8 +8,8 @@ non-quadratic argmin is checked against finite differences over the solver.
 
 import numpy as np
 
-from implicit import _ConstVec, solution_jacobian
-from secondorder import newton_minimize
+from autograd.implicit import _ConstVec, solution_jacobian
+from autograd.secondorder import newton_minimize
 
 
 def test_ridge_matches_closed_form():

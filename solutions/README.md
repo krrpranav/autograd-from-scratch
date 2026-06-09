@@ -21,10 +21,10 @@ $$\frac{\partial f}{\partial c} = 1 - t^2 = 0.00134, \qquad
 \frac{\partial f}{\partial a} = b\,(1 - t^2) = -0.00402, \qquad
 \frac{\partial f}{\partial b} = a\,(1 - t^2) = 0.00268.$$
 
-Verified against the engine (this also reproduces the `viz.py` example graph):
+Verified against the engine (this also reproduces the `autograd/viz.py` example graph):
 
 ```python
-from engine import Tensor
+from autograd.engine import Tensor
 a, b, c = Tensor(2.0), Tensor(-3.0), Tensor(10.0)
 f = (a * b + c).tanh()
 f.backward()
@@ -41,23 +41,23 @@ $\kappa \in \{1, 10, 10^2, 10^3, 10^4\}$. Newton solves it in one step at any
 $\kappa$; gradient descent with the best fixed step converges at rate
 $(\kappa - 1)/(\kappa + 1)$, so steps to a fixed accuracy grow roughly
 linearly in $\kappa$. Count both and plot. For the size question, note that
-`hessian()` in `secondorder.py` costs $n(n+1)/2$ curvature evaluations plus
+`hessian()` in `autograd/secondorder.py` costs $n(n+1)/2$ curvature evaluations plus
 an $O(n^3)$ solve; time it against the iteration count gradient descent
 needs as $n$ grows.
 
-Hv on the GPT (GUIDE exploration 4). `landscape.py` is the template: it
+Hv on the GPT (GUIDE exploration 4). `examples/landscape.py` is the template: it
 flattens the MLP's parameters into one vector, defines `loss(vector)` by
 unflattening into the model, and feeds that to `hvp` / `top_eigenvalue`. Do
-the same with `train_gpt.py`'s loss. Each `Hv` is one forward and one
+the same with `examples/train_gpt.py`'s loss. Each `Hv` is one forward and one
 backward over the whole model, so shrink the model and the number of power
 iterations first, then scale up. The 2D version walks the loss over the span
 of the top two eigenvectors (get the second by power-iterating on
 $H v - \lambda_1 (v_1^\top v) v_1$, the deflated operator).
 
 Op-count benchmark (GUIDE exploration 5). Wall clock depends on the machine;
-op counts do not. Add a module-level counter to `engine.py` and `dual.py`
+op counts do not. Add a module-level counter to `autograd/engine.py` and `autograd/dual.py`
 (increment once per op call), reset it, run `jacobian_forward` and
-`jacobian_reverse` from `dual.py`, and read it back. Forward mode should
+`jacobian_reverse` from `autograd/dual.py`, and read it back. Forward mode should
 scale with the input count $n$ (one pass per column), reverse with the
 output count $m$ (one pass per row), crossing at $n = m$, which is what
-`benchmark.py` measures in seconds.
+`examples/benchmark.py` measures in seconds.

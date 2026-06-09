@@ -5,20 +5,24 @@ node shows its op, its value, and its gradient, with edges pointing the way
 values flow. Call .backward() first if you want the gradients filled in. Layout
 and markup are generated here directly; there is no graphviz dependency.
 
-    uv run python viz.py        # writes assets/example_graph.svg
+    uv run python autograd/viz.py        # writes assets/example_graph.svg
 """
 
 from xml.sax.saxutils import escape
 
 import numpy as np
 
-from engine import Tensor
-from figstyle import BLUE, INK, RED
+from autograd.engine import Tensor
 
 COL, ROW, NW, NH, MARGIN = 210, 96, 172, 64, 32
 SERIF = "STIXGeneral, 'Times New Roman', Times, serif"
 MONO = "ui-monospace, Menlo, Consolas, monospace"
 BORDER = "#d9d9d9"
+# same palette as examples/figstyle.py, inlined so the package has no
+# dependency on the example scripts
+INK = "#1a1a1a"
+BLUE = "#2b4f81"
+RED = "#9e2b25"
 
 
 def _walk(root):

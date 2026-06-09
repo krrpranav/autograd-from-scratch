@@ -7,15 +7,15 @@ top_eigenvalue then measures the sharpness of the trained optimum (the largest
 eigenvalue of the 1218 x 1218 Hessian, touched only through H v products), and we
 walk the loss along that sharpest direction.
 
-    uv run --group viz python landscape.py
+    uv run --group viz python examples/landscape.py
 """
 
 import numpy as np
 
-from dual import Dual
-from engine import Tensor
-from hvp import top_eigenvalue
-from secondorder import Dual2
+from autograd.dual import Dual
+from autograd.engine import Tensor
+from autograd.hvp import top_eigenvalue
+from autograd.secondorder import Dual2
 from train_mlp import train
 
 

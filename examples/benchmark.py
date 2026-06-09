@@ -12,14 +12,14 @@ sits about a factor of two away from n = m.
 Timings are wall-clock and machine-dependent; the shape (one rising, one flat, and
 a crossover) is the point, not the absolute milliseconds.
 
-    uv run --group viz python benchmark.py
+    uv run --group viz python examples/benchmark.py
 """
 
 import time
 
 import numpy as np
 
-from dual import jacobian_forward, jacobian_reverse
+from autograd.dual import jacobian_forward, jacobian_reverse
 
 SIZES = [1, 2, 4, 8, 16, 32, 64, 128]
 FIXED = 16

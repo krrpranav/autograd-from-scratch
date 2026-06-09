@@ -8,8 +8,8 @@ covers individual ops against finite differences and the reverse-mode engine.
 
 import numpy as np
 
-from dual import Dual, adjoint_gap, jacobian_forward, jacobian_reverse, jvp, vjp
-from engine import Tensor
+from autograd.dual import Dual, adjoint_gap, jacobian_forward, jacobian_reverse, jvp, vjp
+from autograd.engine import Tensor
 
 rng = np.random.default_rng(0)
 W = rng.standard_normal((4, 3))

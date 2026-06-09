@@ -9,7 +9,7 @@ Run `newton_minimize` on $f(x) = x_0^2 - x_1^2$:
 
 ```python
 import numpy as np
-from secondorder import newton_minimize, hessian
+from autograd.secondorder import newton_minimize, hessian
 
 def f(x):
     return x[0] ** 2 - x[1] ** 2
@@ -21,7 +21,7 @@ for start in ([1.0, 1.0], [1.2, 0.9], [-3.0, 5.0]):
 print(hessian(f, [1.0, 1.0]))
 ```
 
-Output from running this against the repo's `secondorder.py`:
+Output from running this against the repo's `autograd/secondorder.py`:
 
 ```
 [1.0, 1.0]  -> [0. 0.]
@@ -61,8 +61,8 @@ $\mu \to \infty$ it turns into a small gradient-descent step, and as
 $\mu \to 0$ (where $H$ is already positive definite) it returns to Newton.
 
 ```python
-from engine import Tensor
-from secondorder import gradient, hessian
+from autograd.engine import Tensor
+from autograd.secondorder import gradient, hessian
 
 def newton_damped(f, x0, steps=8, mu=1.0):
     x = np.asarray(x0, np.float64).copy()
@@ -95,5 +95,5 @@ Newton convergence comes back.
 
 Two related mitigations in the wild: trust-region methods, which bound the
 step instead of shifting the Hessian (Levenberg-Marquardt sits between the
-two), and the truncated-CG approach in this repo's `hvp.py` (`newton_cg`
+two), and the truncated-CG approach in this repo's `autograd/hvp.py` (`newton_cg`
 stops the inner solve when it detects negative curvature, see `_cg`).

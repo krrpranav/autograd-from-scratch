@@ -17,7 +17,7 @@ When both implementations are correct this identity holds to machine precision;
 
 import numpy as np
 
-from engine import GELU_C, GELU_CUBIC, Tensor, _as_tuple, _norm_shape
+from autograd.engine import GELU_C, GELU_CUBIC, Tensor, _as_tuple, _norm_shape
 
 
 # Elementwise calls route to the Tensor method of the same name when the primal is

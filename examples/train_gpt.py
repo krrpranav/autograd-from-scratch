@@ -5,13 +5,13 @@ pre-norm blocks, separate output head), with every gradient coming from
 engine.py. Overfitting one short passage drives the loss toward zero, which
 requires correct gradients through every op in the graph.
 
-    uv run python train_gpt.py
+    uv run python examples/train_gpt.py
 """
 
 import numpy as np
 
-from engine import Tensor, cross_entropy
-from nn import Adam, Embedding, LayerNorm, Linear, Module
+from autograd.engine import Tensor, cross_entropy
+from autograd.nn import Adam, Embedding, LayerNorm, Linear, Module
 
 TEXT = "to be or not to be that is the question"
 

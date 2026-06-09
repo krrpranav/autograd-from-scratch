@@ -9,8 +9,8 @@ torch.optim.Adam step for step. Module.parameters/zero_grad are checked directly
 import numpy as np
 import torch
 
-from engine import Tensor
-from nn import SGD, Adam, Embedding, LayerNorm, Linear, Module
+from autograd.engine import Tensor
+from autograd.nn import SGD, Adam, Embedding, LayerNorm, Linear, Module
 
 rng = np.random.default_rng(0)
 

@@ -9,9 +9,9 @@ engine's matrix-free H v (and the power-iteration top eigenvalue) agree with it.
 
 import numpy as np
 
-from hvp import hvp, top_eigenvalue
+from autograd.hvp import hvp, top_eigenvalue
 from landscape import make_loss
-from secondorder import hessian
+from autograd.secondorder import hessian
 
 SHAPES = [(2, 3), (3,), (3, 3), (3,), (3, 2), (2,)]  # a tiny 2->3->3->2 relu MLP
 
