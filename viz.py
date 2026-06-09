@@ -13,8 +13,12 @@ from xml.sax.saxutils import escape
 import numpy as np
 
 from engine import Tensor
+from figstyle import BLUE, INK, RED
 
 COL, ROW, NW, NH, MARGIN = 210, 96, 172, 64, 32
+SERIF = "STIXGeneral, 'Times New Roman', Times, serif"
+MONO = "ui-monospace, Menlo, Consolas, monospace"
+BORDER = "#d9d9d9"
 
 
 def _walk(root):
@@ -79,12 +83,12 @@ def draw_dot(root, path, title="computation graph"):
 
     out = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" '
-        "font-family=\"-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif\">",
+        f'font-family="{SERIF}">',
         '<defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" '
-        'orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>',
+        f'orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="{INK}"/></marker></defs>',
         f'<rect width="{w}" height="{h}" fill="#ffffff"/>',
-        f'<rect x="0.5" y="0.5" width="{w - 1}" height="{h - 1}" fill="none" stroke="#e5e7eb"/>',
-        f'<text x="{MARGIN}" y="40" font-size="18" font-weight="600" fill="#111827">{escape(title)}</text>',
+        f'<rect x="0.5" y="0.5" width="{w - 1}" height="{h - 1}" fill="none" stroke="{BORDER}"/>',
+        f'<text x="{MARGIN}" y="40" font-size="13" fill="{INK}">{escape(title)}</text>',
     ]
     for v in nodes:
         for c in v._prev:
@@ -92,24 +96,25 @@ def draw_dot(root, path, title="computation graph"):
             vx, vy = pos[id(v)]
             out.append(
                 f'<line x1="{cx + NW}" y1="{cy + NH // 2}" x2="{vx}" y2="{vy + NH // 2}" '
-                'stroke="#2563eb" stroke-width="2" marker-end="url(#a)"/>'
+                f'stroke="{INK}" stroke-width="1.2" marker-end="url(#a)"/>'
             )
     for v in nodes:
         x, y = pos[id(v)]
         if not v._prev:
-            fill, stroke, head = "#eff6ff", "#bfdbfe", "input"
+            stroke_width, head = "1.6", "input"
         elif v is root:
-            fill, stroke, head = "#ecfdf5", "#a7f3d0", f"{v._op}  (output)"
+            stroke_width, head = "1.6", f"{v._op}  (output)"
         else:
-            fill, stroke, head = "#f8fafc", "#e2e8f0", v._op
+            stroke_width, head = "1", v._op
         val, grad = _label(v)
         out += [
-            f'<rect x="{x}" y="{y}" width="{NW}" height="{NH}" rx="11" fill="{fill}" stroke="{stroke}"/>',
-            f'<text x="{x + 14}" y="{y + 23}" font-size="13.5" font-weight="600" fill="#1f2933">{escape(head)}</text>',
-            f'<text x="{x + 14}" y="{y + 41}" font-size="12" fill="#2563eb" '
-            f'font-family="ui-monospace, Menlo, Consolas, monospace">{escape(val)}</text>',
-            f'<text x="{x + 14}" y="{y + 57}" font-size="12" fill="#dc2626" '
-            f'font-family="ui-monospace, Menlo, Consolas, monospace">{escape(grad)}</text>',
+            f'<rect x="{x}" y="{y}" width="{NW}" height="{NH}" rx="11" '
+            f'fill="#ffffff" stroke="{INK}" stroke-width="{stroke_width}"/>',
+            f'<text x="{x + 14}" y="{y + 23}" font-size="13" fill="{INK}">{escape(head)}</text>',
+            f'<text x="{x + 14}" y="{y + 41}" font-size="12" fill="{BLUE}" '
+            f'font-family="{MONO}">{escape(val)}</text>',
+            f'<text x="{x + 14}" y="{y + 57}" font-size="12" fill="{RED}" '
+            f'font-family="{MONO}">{escape(grad)}</text>',
         ]
     out.append("</svg>")
     with open(path, "w") as fh:

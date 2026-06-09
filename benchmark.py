@@ -70,28 +70,40 @@ def _plot(in_fwd, in_rev, out_fwd, out_rev):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    plt.rcParams["axes.unicode_minus"] = False
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.4, 4.3))
+    import figstyle
+
+    figstyle.apply()
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.8, 3.1))
 
     for ax, fwd, rev, swept, fixed_label in (
-        (ax1, in_fwd, in_rev, "inputs (n)", "outputs fixed at 16"),
-        (ax2, out_fwd, out_rev, "outputs (m)", "inputs fixed at 16"),
+        (ax1, in_fwd, in_rev, "inputs $n$", "outputs fixed at $m = 16$"),
+        (ax2, out_fwd, out_rev, "outputs $m$", "inputs fixed at $n = 16$"),
     ):
-        ax.plot(SIZES, fwd, "o-", color="#2563eb", lw=2, label="forward (jvp)")
-        ax.plot(SIZES, rev, "o-", color="#dc2626", lw=2, label="reverse (vjp)")
-        ax.axvline(FIXED, color="#9ca3af", ls="--", lw=1)
+        ax.plot(
+            SIZES, fwd, "o-", color=figstyle.BLUE, lw=1.2, ms=3.2, label="forward (jvp)"
+        )
+        ax.plot(
+            SIZES, rev, "o-", color=figstyle.RED, lw=1.2, ms=3.2, label="reverse (vjp)"
+        )
+        ax.axvline(FIXED, color=figstyle.GRAY, ls="--", lw=0.9)
+        ax.text(
+            FIXED * 1.12,
+            0.96,
+            "$n = m$",
+            transform=ax.get_xaxis_transform(),
+            fontsize=9,
+            color=figstyle.GRAY,
+            va="top",
+        )
         ax.set_xscale("log", base=2)
         ax.set_yscale("log")
         ax.set_xlabel(swept)
-        ax.set_title(fixed_label)
-        ax.grid(True, which="both", color="#eef0f3")
-        for s in ("top", "right"):
-            ax.spines[s].set_visible(False)
+        ax.set_title(fixed_label, fontsize=10)
+        ax.grid(True, which="both")
     ax1.set_ylabel("time per full Jacobian (ms)")
-    ax1.legend(frameon=False)
-    fig.suptitle("Forward vs reverse: full-Jacobian cost")
+    ax1.legend(fontsize=9)
     fig.tight_layout()
-    fig.savefig("assets/mode_crossover.svg")
+    fig.savefig("assets/mode_crossover.svg", bbox_inches="tight")
 
 
 if __name__ == "__main__":

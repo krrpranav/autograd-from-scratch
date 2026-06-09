@@ -96,27 +96,24 @@ def _plot(alphas, sharp, flat, lam):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    plt.rcParams["axes.unicode_minus"] = (
-        False  # ASCII hyphen on tick labels, not U+2212
-    )
-    fig, ax = plt.subplots(figsize=(7.2, 4.4))
+    import figstyle
+
+    figstyle.apply()
+    fig, ax = plt.subplots(figsize=(6.4, 4.0))
     ax.plot(
         alphas,
         sharp,
-        color="#dc2626",
-        lw=2.2,
-        label=f"sharpest direction (lambda = {lam:.1f})",
+        color=figstyle.RED,
+        lw=1.4,
+        label=rf"sharpest direction ($\lambda_{{\max}} = {lam:.1f}$)",
     )
-    ax.plot(alphas, flat, color="#2563eb", lw=2.2, label="a random direction")
+    ax.plot(alphas, flat, color=figstyle.BLUE, lw=1.4, label="a random direction")
     ax.set_xlabel("step along the unit direction")
     ax.set_ylabel("loss")
-    ax.set_title("Loss landscape of the trained MLP, sliced two ways")
-    ax.legend(frameon=False)
-    ax.grid(True, color="#eef0f3")
-    for s in ("top", "right"):
-        ax.spines[s].set_visible(False)
+    ax.legend(fontsize=9.5)
+    ax.grid(True)
     fig.tight_layout()
-    fig.savefig("assets/loss_landscape.svg")
+    fig.savefig("assets/loss_landscape.svg", bbox_inches="tight")
 
 
 if __name__ == "__main__":

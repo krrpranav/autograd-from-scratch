@@ -27,6 +27,7 @@ STEPS = [
         "forward vs reverse cost crossover  ->  assets/mode_crossover.svg",
     ),
     (["viz.py"], "a real computation graph  ->  assets/example_graph.svg"),
+    (["figures.py"], "explainer diagrams  ->  assets/*.svg"),
 ]
 
 
