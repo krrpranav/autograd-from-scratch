@@ -365,9 +365,9 @@ step for step for 20 steps). `examples/train_gpt.py` is a real decoder-only
 Transformer: multi-head causal attention, pre-norm residual blocks, GELU MLP,
 learned positional embeddings, small only in scale (one layer, width 32). The
 architecture itself is not this repo's subject; it is the same model as
-[minimal-gpt](https://github.com/krrpranav/minimal-gpt), which builds it piece
-by piece, so read that (or Karpathy's "Let's build GPT") if attention is new
-to you. It memorizes one line of Shakespeare to loss 0.0002, which is
+[minimal-gpt](https://github.com/krrpranav/minimal-gpt), which walks the
+architecture line by line, so read that (or Karpathy's "Let's build GPT") if
+attention is new to you. It memorizes one line of Shakespeare to loss 0.0002, which is
 deliberate overfitting used as an end-to-end gradient check; in real training,
 driving the loss to zero like this would be the thing you avoid. Both training
 runs are asserted in `tests/test_integration.py`: the per-op tests check
