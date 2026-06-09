@@ -1,5 +1,8 @@
 # autograd-from-scratch
 
+[![tests](https://github.com/krrpranav/autograd-from-scratch/actions/workflows/tests.yml/badge.svg)](https://github.com/krrpranav/autograd-from-scratch/actions/workflows/tests.yml)
+[![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 I built this to understand what `loss.backward()` actually does. It is a small
 automatic differentiation engine in plain NumPy: Karpathy's scalar
 [micrograd](https://github.com/karpathy/micrograd) reimplemented first, then the
@@ -7,6 +10,24 @@ same idea lifted to arrays, then the things I got curious about after that:
 forward mode, exact second derivatives, differentiating through an optimizer's
 solution, and Hessian-vector products. A small MLP and a tiny GPT train on it.
 PyTorch appears only in the tests, as a reference to check gradients against.
+
+```python
+import numpy as np
+from autograd import Tensor, jvp, vjp
+
+# reverse mode: build an expression, one backward() fills every gradient
+a, b, c = Tensor(2.0), Tensor(-3.0), Tensor(10.0)
+f = (a * b + c).tanh()
+f.backward()
+print(a.grad, b.grad, c.grad)   # -0.00402  0.00268  0.00134
+
+# forward mode computes Jv; reverse mode computes J^T u; same Jacobian,
+# evaluated from the two ends (GUIDE.md section 4 proves they must agree)
+g = lambda x: (x ** 2).sum()
+x, v = np.array([1.0, 2.0]), np.array([3.0, 4.0])
+print(jvp(g, x, v))      # 22.0    the directional derivative along v
+print(vjp(g, x, 1.0))    # [2. 4.] the gradient: J^T u with u = 1
+```
 
 Reverse mode records each operation as you compute, then walks the graph
 backward applying the chain rule, accumulating a gradient into every input. It
