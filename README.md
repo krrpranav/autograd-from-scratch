@@ -37,21 +37,96 @@ uv run --group viz python benchmark.py   # forward vs reverse cost measurement
 uv run --group viz python reproduce.py   # rerun everything, regenerate figures
 ```
 
-## Where to start
+## Learning from this repo
 
-Depends on what you want:
+The code is one half; the other half is a set of materials for working through
+it. They are meant to be used in roughly this order, but each stands on its
+own.
 
-- `walkthrough.ipynb` builds the scalar engine from nothing, one cell at a
-  time, with every step checked by nudging values. Start here if autodiff is
-  new to you.
-- `GUIDE.md` walks the whole repo in build order, with the math prerequisites,
-  a hand-traced backward pass, the things that broke along the way, and
-  exercises. A glossary is at the end.
-- `challenge/` is the rebuild-it-yourself track: skeleton files plus numbered
-  checkpoint tests, so `uv run python -m pytest challenge -x` always points at
-  the next thing to implement. `solutions/` has answers and hints.
-- `NOTES.md` is the write-up: why I built it, what each part taught me, what
-  broke, and what is checked against what.
+### 1. `walkthrough.ipynb`, if autodiff is new to you
+
+A notebook that builds a scalar autodiff engine from nothing, in the order the
+ideas actually arrive: estimate a derivative by nudging a value, write a
+`Value` class that only knows `+` and `*`, push gradients through a four-node
+graph by hand, automate it with closures and a topological sort, hit the
+classic gradient-overwrite bug and watch it give the wrong number, fix it, and
+finish by training a three-neuron network whose loss visibly falls. Every step
+is checked against the nudge estimate, so nothing has to be taken on faith.
+
+The outputs are saved in the file, so you can read it straight on GitHub. To
+run and edit it locally:
+
+```bash
+uv run --with notebook jupyter notebook walkthrough.ipynb
+```
+
+### 2. `GUIDE.md`, the walkthrough of the real engine
+
+The guide covers the repo in the order it was built, one section per idea:
+reverse mode with a fully hand-traced backward pass, broadcasting and why it
+is where tensor gradients go wrong, forward mode, the adjoint identity that
+ties the two modes together, second order, implicit differentiation,
+Hessian-vector products, the curvature of the trained network, and the
+training loop itself.
+
+It starts with a short section on the math it needs (gradient, Jacobian, chain
+rule as matrix multiplication, Hessian) and ends with a glossary, so the only
+real prerequisites are Python and the single-variable chain rule. Each section
+names the test that verifies the idea and notes what broke while building it,
+because the bugs are at least as instructive as the code. Seven exercises are
+placed where you have just learned enough to attempt them.
+
+Use it with the code open: run the script each section talks about, then read
+the section, then read the source file.
+
+### 3. `challenge/`, rebuild the engine yourself
+
+The strongest way through this material is writing the engine against the same
+tests that verify mine. The challenge directory has two skeleton files
+(`engine_skeleton.py`, `dual_skeleton.py`) where every method states its
+contract and raises `NotImplementedError`, plus checkpoint tests numbered in
+build order: scalar ops, the backward walk, unbroadcasting, matmul, the
+remaining ops, forward mode, and finally the adjoint identity binding your two
+engines together.
+
+The loop is one command:
+
+```bash
+uv run python -m pytest challenge -x   # stops at exactly the next thing to implement
+```
+
+Implement the method it failed on, run it again, repeat. The checks are
+framework-free (hand-computed numbers and finite differences), so you never
+need PyTorch for this part. The rules and checkpoint list are in
+`challenge/README.md`. If you want to confirm the checkpoints themselves are
+sound, `CHALLENGE_REFERENCE=1 uv run python -m pytest challenge -q` runs them
+against the repo's real engine; all of them pass.
+
+### 4. `solutions/`, when you are stuck or done
+
+Worked answers, each with a try-first warning at the top:
+
+- `solutions/01_add_sin.md`: adding a new op (`sin`) to all three classes,
+  with the exact code and the checks to run against finite differences and
+  the adjoint identity. This is the best first exercise; after it,
+  "registering an op" in a real framework is no longer mysterious.
+- `solutions/02_break_newton.md`: running Newton's method into a saddle point
+  on purpose, why the Hessian explains it, and a damped fix.
+- `solutions/03_zero_grad.md`: what happens when you skip `zero_grad()`, and
+  why gradient accumulation is correct within one backward pass but wrong
+  across steps.
+- `solutions/README.md`: answers to the guide's warm-up exercises and sketches
+  for the open ones (the condition-number sweep, measuring the GPT's
+  curvature, an op-count version of the benchmark).
+
+### 5. `NOTES.md`, the write-up
+
+What I learned building each piece, in the order I built them: the bugs that
+left regression tests behind (the cross-entropy clamp, the recursion limit,
+the 0 times infinity NaN, conjugate gradient dying on a saddle), the benchmark
+that refused to cross where the textbook argument said it would and why, and a
+table of what is checked against what. Read it whenever; it pairs well with
+the guide but assumes nothing from it.
 
 ## Results
 
@@ -95,9 +170,9 @@ Numbers from the current code; `reproduce.py` reruns all of them.
 | `benchmark.py` | Forward vs reverse cost of a full Jacobian, measured |
 | `walkthrough.ipynb` | Build the scalar engine from nothing, step by step |
 | `challenge/` | Rebuild the engine yourself against checkpoint tests |
-| `solutions/` | Answers and hints for the exercises |
+| `solutions/` | Worked answers and hints for the exercises |
 | `tests/` | Per-op checks vs PyTorch, finite differences, the adjoint identity |
-| `GUIDE.md` | The walkthrough, with prerequisites, exercises, and a glossary |
+| `GUIDE.md` | The walkthrough: prerequisites, hand traces, exercises, glossary |
 | `NOTES.md` | What building this taught me, and what is verified against what |
 | `reproduce.py` | One command: tests, every demo, every figure |
 
