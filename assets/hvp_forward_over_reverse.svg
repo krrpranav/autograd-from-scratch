@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="fwd" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker>
+    <marker id="bwd" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#dc2626"/></marker>
+  </defs>
+  <rect width="760" height="380" fill="#ffffff"/>
+  <rect x="0.5" y="0.5" width="759" height="379" fill="none" stroke="#e5e7eb"/>
+
+  <text x="32" y="38" font-size="19" font-weight="600" fill="#111827">Hessian-vector products: the two modes composed</text>
+  <text x="32" y="62" font-size="13" fill="#64748b">run reverse mode through a forward-mode perturbation, and the Hessian is never formed</text>
+
+  <!-- forward then backward arrows between stages -->
+  <line x1="234" y1="206" x2="273" y2="206" stroke="#2563eb" stroke-width="2.4" marker-end="url(#fwd)"/>
+  <line x1="487" y1="206" x2="526" y2="206" stroke="#dc2626" stroke-width="2.4" stroke-dasharray="6 5" marker-end="url(#bwd)"/>
+
+  <!-- stage 1 -->
+  <rect x="24" y="146" width="206" height="120" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="40" y="172" font-size="14" font-weight="600" fill="#1f2933">1.  seed the input</text>
+  <text x="40" y="196" font-size="12" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">Dual(</text>
+  <text x="40" y="213" font-size="12" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">  primal = Tensor(x),</text>
+  <text x="40" y="230" font-size="12" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">  tangent = v )</text>
+  <text x="40" y="252" font-size="11.5" fill="#2563eb">primal x is reverse-tracked</text>
+
+  <!-- stage 2 -->
+  <rect x="277" y="146" width="206" height="120" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="293" y="172" font-size="14" font-weight="600" fill="#1f2933">2.  forward pass</text>
+  <text x="293" y="196" font-size="12" fill="#334155">f runs on the Dual; its</text>
+  <text x="293" y="214" font-size="12" fill="#334155">output tangent is</text>
+  <text x="293" y="234" font-size="12.5" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">grad f(x) . v</text>
+  <text x="293" y="256" font-size="11.5" fill="#2563eb">and it is itself a Tensor</text>
+
+  <!-- stage 3 -->
+  <rect x="530" y="146" width="206" height="120" rx="12" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="546" y="172" font-size="14" font-weight="600" fill="#1f2933">3.  backward</text>
+  <text x="546" y="195" font-size="11.5" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">(grad f . v).backward()</text>
+  <text x="546" y="216" font-size="12" fill="#334155">reads the input grad:</text>
+  <text x="546" y="237" font-size="13" font-weight="600" fill="#1e293b" font-family="ui-monospace, Menlo, Consolas, monospace">x.grad = H v</text>
+  <text x="546" y="257" font-size="11.5" fill="#dc2626">H is never formed</text>
+
+  <!-- caption -->
+  <text x="380" y="312" font-size="13" fill="#374151" text-anchor="middle">One pass gives H v, so this is the version that scales to a real network.</text>
+  <text x="380" y="336" font-size="12" fill="#6b7280" text-anchor="middle">The second derivative is never written by hand: reverse mode differentiates forward mode's first-order rule again.</text>
+</svg>

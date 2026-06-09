@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="fwd" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker>
+    <marker id="bwd" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#dc2626"/></marker>
+  </defs>
+  <rect width="760" height="440" fill="#ffffff"/>
+  <rect x="0.5" y="0.5" width="759" height="439" fill="none" stroke="#e5e7eb"/>
+
+  <text x="32" y="40" font-size="19" font-weight="600" fill="#111827">Reverse mode: one backward pass fills every gradient</text>
+
+  <!-- legend -->
+  <line x1="520" y1="66" x2="556" y2="66" stroke="#2563eb" stroke-width="2" marker-end="url(#fwd)"/>
+  <text x="562" y="70" font-size="12.5" fill="#374151">forward: values</text>
+  <line x1="520" y1="86" x2="556" y2="86" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#bwd)"/>
+  <text x="562" y="90" font-size="12.5" fill="#374151">backward: gradients</text>
+
+  <!-- forward edges -->
+  <g stroke="#2563eb" stroke-width="2" fill="none" marker-end="url(#fwd)">
+    <line x1="204" y1="124" x2="298" y2="138"/>
+    <line x1="204" y1="286" x2="298" y2="150"/>
+    <line x1="454" y1="144" x2="552" y2="206"/>
+    <path d="M204,292 C360,338 440,300 552,220"/>
+  </g>
+
+  <!-- backward sweep -->
+  <path d="M640,250 C560,372 230,372 120,300" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 5" fill="none" marker-end="url(#bwd)"/>
+  <text x="384" y="364" font-size="12.5" fill="#dc2626" text-anchor="middle">z.backward(): gradients propagate from z back to every input</text>
+
+  <!-- node: x -->
+  <rect x="54" y="92" width="150" height="64" rx="11" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="70" y="117" font-size="14" font-weight="600" fill="#1f2933">x  (input)</text>
+  <text x="70" y="136" font-size="12.5" fill="#2563eb" font-family="ui-monospace, Menlo, Consolas, monospace">value = 3.0</text>
+  <text x="70" y="152" font-size="12.5" fill="#dc2626" font-family="ui-monospace, Menlo, Consolas, monospace">grad  = 2.0</text>
+
+  <!-- node: y -->
+  <rect x="54" y="256" width="150" height="64" rx="11" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="70" y="281" font-size="14" font-weight="600" fill="#1f2933">y  (input)</text>
+  <text x="70" y="300" font-size="12.5" fill="#2563eb" font-family="ui-monospace, Menlo, Consolas, monospace">value = 2.0</text>
+  <text x="70" y="316" font-size="12.5" fill="#dc2626" font-family="ui-monospace, Menlo, Consolas, monospace">grad  = 4.0</text>
+
+  <!-- node: multiply -->
+  <rect x="304" y="106" width="150" height="64" rx="11" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="320" y="131" font-size="14" font-weight="600" fill="#1f2933">h = x * y</text>
+  <text x="320" y="150" font-size="12.5" fill="#2563eb" font-family="ui-monospace, Menlo, Consolas, monospace">value = 6.0</text>
+  <text x="320" y="166" font-size="12.5" fill="#dc2626" font-family="ui-monospace, Menlo, Consolas, monospace">grad  = 1.0</text>
+
+  <!-- node: add (root) -->
+  <rect x="556" y="176" width="152" height="64" rx="11" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="572" y="201" font-size="14" font-weight="600" fill="#1f2933">z = h + y   (loss)</text>
+  <text x="572" y="220" font-size="12.5" fill="#2563eb" font-family="ui-monospace, Menlo, Consolas, monospace">value = 8.0</text>
+  <text x="572" y="236" font-size="12.5" fill="#dc2626" font-family="ui-monospace, Menlo, Consolas, monospace">grad  = 1.0  (seed)</text>
+
+  <!-- accumulation note -->
+  <text x="32" y="398" font-size="12.5" fill="#4b5563">y feeds two ops, so its gradient is the sum of both paths:  3.0 (through *)  +  1.0 (through +)  =  4.0</text>
+  <text x="32" y="424" font-size="12.5" fill="#6b7280" font-family="ui-monospace, Menlo, Consolas, monospace">x, y = Tensor(3.0), Tensor(2.0);   z = x*y + y;   z.backward()</text>
+</svg>
