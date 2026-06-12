@@ -1,6 +1,6 @@
 # Solutions
 
-Worked answers for the GUIDE.md exercises. Try each exercise before
+Worked answers for the exercises in the README's guide. Try each exercise before
 opening its file; the point of the exercises is the attempt, and every one of
 them comes with an oracle (finite differences, the adjoint identity, the
 existing tests) that tells you on its own whether your answer is right.
@@ -57,7 +57,7 @@ which `backward()` confirms.
 
 These stay open; the notes below are starting points, not answers.
 
-Condition-number sweep (GUIDE Exercise 6). Use the quadratic
+Condition-number sweep (guide Exercise 6). Use the quadratic
 $f(x) = \tfrac12 (x_0^2 + \kappa x_1^2)$ and sweep
 $\kappa \in \{1, 10, 10^2, 10^3, 10^4\}$. Newton solves it in one step at any
 $\kappa$; gradient descent with the best fixed step converges at rate
@@ -67,7 +67,7 @@ linearly in $\kappa$. Count both and plot. For the size question, note that
 an $O(n^3)$ solve; time it against the iteration count gradient descent
 needs as $n$ grows.
 
-Hv on the GPT (GUIDE Exercise 5). `examples/landscape.py` is the template: it
+Hv on the GPT (guide Exercise 5). `examples/landscape.py` is the template: it
 flattens the MLP's parameters into one vector, defines `loss(vector)` by
 unflattening into the model, and feeds that to `hvp` / `top_eigenvalue`. Do
 the same with `examples/train_gpt.py`'s loss. Each `Hv` is one forward and one
@@ -76,7 +76,7 @@ iterations first, then scale up. The 2D version walks the loss over the span
 of the top two eigenvectors (get the second by power-iterating on
 $H v - \lambda_1 (v_1^\top v) v_1$, the deflated operator).
 
-Op-count benchmark (GUIDE Exercise 7). Wall clock depends on the machine;
+Op-count benchmark (guide Exercise 7). Wall clock depends on the machine;
 op counts do not. Add a module-level counter to `autograd/engine.py` and `autograd/dual.py`
 (increment once per op call), reset it, run `jacobian_forward` and
 `jacobian_reverse` from `autograd/dual.py`, and read it back. Forward mode should
