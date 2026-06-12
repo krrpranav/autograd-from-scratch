@@ -9,6 +9,7 @@ build/
 .mypy_cache/
 .ipynb_checkpoints/
 .coverage
+.coverage.*
 htmlcov/
 
 # virtual env
@@ -17,3 +18,5 @@ htmlcov/
 # OS / editor
 .DS_Store
 *.swp
+.vscode/
+.idea/
