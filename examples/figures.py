@@ -1,13 +1,15 @@
-"""Regenerate the four explainer diagrams under assets/.
+"""Regenerate the six explainer diagrams under assets/.
 
 Each figure is drawn with matplotlib in the shared paper style (figstyle.py):
 serif text, STIX math, near-black ink, solid blue for the forward pass and
 dashed red for the backward pass.
 
+    chain_rule.svg                J_g times J_f, the worked 2x2 example
     reverse_mode.svg              the z = x*y + y graph, values and gradients
     forward_vs_reverse.svg        Jv and J^T u as two directions of one map J
     hvp_forward_over_reverse.svg  forward-over-reverse pipeline for Hv
     unbroadcast.svg               broadcast forward, sum backward
+    training_loop.svg             forward, backward, step, repeat
 
     uv run --group viz python examples/figures.py
 """
@@ -117,6 +119,162 @@ def _cells(ax, x0, ytop, labels, cw, ch, color, gap=0.1, size=9):
                 ha="center",
                 va="center",
             )
+
+
+def fig_chain_rule():
+    """Composition is matrix multiplication: J_g times J_f, with the numbers.
+
+    f(x, y) = (xy, x + y) and g(u, v) = u + v at (2, 3): the row (1 1) times
+    the 2x2 Jacobian of f gives (4 3), the gradient of xy + x + y directly.
+    """
+    fig, ax = _ax(6.8, 3.3)
+
+    cw, ch, gap = 0.72, 0.58, 0.1
+    mid = 2.45  # vertical center of every matrix block
+    h2 = 2 * ch + gap
+
+    ax.text(
+        5.0,
+        4.35,
+        r"$J_{g \circ f}(x) \;=\; J_g(f(x)) \cdot J_f(x)$",
+        size=12,
+        ha="center",
+        va="center",
+    )
+
+    # J_g: the row (1 1), since g(u, v) = u + v
+    x0 = 1.55
+    _cells(ax, x0, mid + ch / 2, [["$1$", "$1$"]], cw, ch, INK)
+    ax.text(
+        x0 + cw + gap / 2,
+        mid + ch / 2 + 0.3,
+        "$J_g$",
+        size=10,
+        ha="center",
+        va="bottom",
+    )
+    ax.text(
+        x0 + cw + gap / 2,
+        mid - ch / 2 - 0.3,
+        "$g(u,v) = u + v$",
+        size=8.5,
+        color=GRAY,
+        ha="center",
+        va="top",
+    )
+
+    ax.text(3.45, mid, r"$\cdot$", size=13, ha="center", va="center")
+
+    # J_f at (2, 3): the 2x2 from f(x, y) = (xy, x + y)
+    x0 = 3.8
+    _cells(ax, x0, mid + h2 / 2, [["$3$", "$2$"], ["$1$", "$1$"]], cw, ch, INK)
+    ax.text(
+        x0 + cw + gap / 2,
+        mid + h2 / 2 + 0.3,
+        "$J_f$ at $(2,3)$",
+        size=10,
+        ha="center",
+        va="bottom",
+    )
+    ax.text(
+        x0 + cw + gap / 2,
+        mid - h2 / 2 - 0.3,
+        r"$f(x,y) = (xy,\; x{+}y)$",
+        size=8.5,
+        color=GRAY,
+        ha="center",
+        va="top",
+    )
+
+    ax.text(5.7, mid, "$=$", size=13, ha="center", va="center")
+
+    # the product: the gradient of g(f(x, y)) = xy + x + y
+    x0 = 6.25
+    _cells(ax, x0, mid + ch / 2, [["$4$", "$3$"]], cw, ch, RED)
+    ax.text(
+        x0 + cw + gap / 2,
+        mid + ch / 2 + 0.3,
+        r"$J_{g \circ f}$",
+        size=10,
+        ha="center",
+        va="bottom",
+    )
+    ax.text(
+        x0 + cw + gap / 2,
+        mid - ch / 2 - 0.3,
+        r"$(y{+}1,\; x{+}1)$ at $(2,3)$",
+        size=8.5,
+        color=GRAY,
+        ha="center",
+        va="top",
+    )
+
+    ax.text(
+        5.0,
+        0.35,
+        "every program is a chain of small functions with known Jacobians; "
+        "autodiff picks the multiplication order",
+        size=8.5,
+        color=GRAY,
+        ha="center",
+        va="center",
+    )
+    _save(fig, "chain_rule.svg")
+
+
+def fig_training_loop():
+    """The training cycle: forward to a scalar loss, backward, step, repeat."""
+    fig, ax = _ax(6.8, 3.7)
+
+    y = 3.85
+    _node(
+        ax,
+        1.75,
+        y,
+        2.3,
+        1.2,
+        [("parameters", 8.5, GRAY), (r"$\theta$ (every weight)", 9.5, INK)],
+    )
+    _node(
+        ax,
+        8.25,
+        y,
+        2.3,
+        1.2,
+        [("scalar loss", 8.5, GRAY), (r"$L = f(\theta,\, \mathrm{batch})$", 9.5, INK)],
+    )
+    _node(
+        ax,
+        5.0,
+        1.45,
+        2.6,
+        1.2,
+        [("gradients", 8.5, GRAY), (r"$\theta$.grad $= \nabla_{\theta} L$", 9.5, INK)],
+    )
+
+    # forward: parameters -> loss, along the top
+    _arrow(ax, (3.25, y), (6.75, y), BLUE)
+    ax.text(5.0, y + 0.3, "forward pass", size=9, color=BLUE, ha="center", va="bottom")
+
+    # backward: loss -> gradients
+    _arrow(ax, (7.7, 2.85), (6.3, 2.2), RED, dashed=True, rad=0.2)
+    ax.text(7.75, 2.2, "loss.backward()", size=9, color=RED, ha="left", va="center")
+
+    # step: gradients -> parameters
+    _arrow(ax, (3.7, 2.2), (2.3, 2.85), INK, rad=0.2)
+    ax.text(2.25, 2.2, "opt.step()", size=9, ha="right", va="center")
+
+    ax.text(
+        5.0,
+        0.25,
+        r"step: $\theta \leftarrow \theta - \eta\,\theta$.grad;   "
+        "opt.zero_grad() clears grads first, because += accumulates",
+        size=8.5,
+        color=GRAY,
+        ha="center",
+        va="center",
+    )
+    _save(fig, "training_loop.svg")
 
 
 def fig_reverse_mode():
@@ -365,7 +523,9 @@ def fig_unbroadcast():
 
 
 if __name__ == "__main__":
+    fig_chain_rule()
     fig_reverse_mode()
     fig_forward_vs_reverse()
     fig_hvp()
     fig_unbroadcast()
+    fig_training_loop()

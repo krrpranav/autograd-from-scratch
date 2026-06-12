@@ -193,6 +193,8 @@ program is a composition of small functions whose Jacobians we know, so its
 derivative is a product of known matrices, and the two autodiff modes are just
 the two sensible orders to multiply them in.
 
+![The chain rule as matrix multiplication: the row Jacobian of g times the Jacobian of f gives the gradient of the composition](assets/chain_rule.svg)
+
 The Hessian $H$ is the matrix of second derivatives of a scalar function,
 $H_{ij} = \partial^2 f / \partial x_i \partial x_j$. It describes curvature.
 That is all of the second-order sections.
@@ -212,6 +214,16 @@ derivative. `backward()` topologically sorts the graph, seeds the output's
 gradient with 1, and walks the order in reverse; each node passes gradient to
 its inputs with `+=`. (The figure at the top of this README draws exactly
 this.)
+
+In symbols, with $\bar{x}$ for the gradient $\partial f / \partial x$ stored
+on a node $x$: an operation $o = g(a, b)$ contributes
+
+$$\bar{a} \;{+}{=}\; \bar{o} \cdot \frac{\partial o}{\partial a},
+\qquad
+\bar{b} \;{+}{=}\; \bar{o} \cdot \frac{\partial o}{\partial b}$$
+
+That one local rule, applied in reverse topological order, is the entire
+engine.
 
 Trace it once by hand and the mystery goes. Take $f = \tanh(a \cdot b + c)$
 with $a = 2$, $b = -3$, $c = 10$. Forward: $e = ab = -6$, $d = e + c = 4$,
@@ -302,6 +314,14 @@ derivative, and pushes the tangent through the same local rules the reverse
 engine uses. There is no graph and no reverse walk. One forward pass computes
 the Jacobian-vector product $Jv$: how the outputs move if the inputs move in
 direction $v$.
+
+The arithmetic is exactly what $a + \epsilon\, a'$ with $\epsilon^2 = 0$
+forces. Multiplication does the product rule by itself,
+
+$$(a + \epsilon a')(b + \epsilon b') = ab + \epsilon\,(a b' + a' b)$$
+
+and a unary op pushes the tangent through its local slope:
+$g(a + \epsilon a') = g(a) + \epsilon\, g'(a)\, a'$.
 
 The two modes therefore have opposite costs. A full Jacobian needs one forward
 pass per input column (forward mode) or one backward pass per output row
@@ -489,10 +509,25 @@ for step in range(400):
     opt.step()           # walk downhill
 ```
 
+![The training cycle: a forward pass to a scalar loss, backward to fill every gradient, a step against them](assets/training_loop.svg)
+
 `zero_grad()` exists because of Section 1's `+=`: accumulation is correct
 *within* one backward pass (a parameter feeding several ops must sum its
 paths) and wrong *across* steps. Skip it and your gradients double; warm-up
 exercise 2 has you observe this directly.
+
+`opt.step()` is one of two updates. SGD walks straight downhill,
+$\theta \leftarrow \theta - \eta\, \nabla_\theta L$ with learning rate $\eta$.
+Adam keeps running averages of each gradient and its square, and rescales
+every parameter's step by its own noise level:
+
+$$m \leftarrow \beta_1 m + (1 - \beta_1)\, \nabla_\theta L,
+\qquad
+v \leftarrow \beta_2 v + (1 - \beta_2)\, (\nabla_\theta L)^2,
+\qquad
+\theta \leftarrow \theta - \eta\, \frac{\hat{m}}{\sqrt{\hat{v}} + \varepsilon}$$
+
+with $\hat{m}, \hat{v}$ the bias-corrected averages.
 
 `autograd/nn.py` holds the layers (Linear, Embedding, LayerNorm) and optimizers (Adam
 with bias correction, SGD), each a few lines on top of the engine, each
